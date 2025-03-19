@@ -10,6 +10,19 @@
         "addressIndices": [4, 5]
     },
     {
+        "kind": "mnemonics",
+        "mnemonics": [
+            {
+                "mnemonic": "moral volcano peasant pass circle pen over picture flat shop clap goat never lyrics gather prepare woman film husband gravity behind test tiger improve",
+                "addressIndices": [0, 1, 2, 3]
+            },
+            {
+                "mnemonicPath": "~/multiversx-sdk/testwallets/latest/users/mnemonic.txt",
+                "addressIndices": [4, 5]
+            }
+        ]
+    },
+    {
         "kind": "keystore",
         "path": "~/multiversx-sdk/testwallets/latest/users/alice.json",
         "password": "password",
@@ -24,17 +37,20 @@
     {
         "kind": "keystores",
         "path": "~/multiversx-sdk/testwallets/latest/users",
-        "passwordsByFile": {
+        "passwordPath": "~/multiversx-sdk/testwallets/latest/users/password.txt",
+        "byFile": {
             "carol.json": {
-                "password": "password"
+                "password": "password",
+                "addressIndices": [0]
             },
             "dan.json": {
-                "passwordPath": "~/multiversx-sdk/testwallets/latest/users/password.txt"
+                "passwordPath": "~/multiversx-sdk/testwallets/latest/users/password.txt",
+                "addressIndices": [0]
             }
-        },
-        "addressIndicesByFile": {
-            "carol.json": [0],
-            "dan.json": [0]
         }
+    },
+    {
+        "kind": "ledger",
+        "addressIndices": [0, 1, 2, 3]
     }
 ]

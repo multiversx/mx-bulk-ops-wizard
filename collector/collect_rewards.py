@@ -1,0 +1,26 @@
+import sys
+from argparse import ArgumentParser
+
+from collector import errors, ux
+
+
+def main(cli_args: list[str] = sys.argv[1:]):
+    try:
+        _do_main(cli_args)
+    except errors.KnownError as err:
+        ux.show_critical_error(err.get_pretty())
+        return 1
+
+
+def _do_main(cli_args: list[str]):
+    parser = ArgumentParser()
+
+    # amount threshold
+    # timing for each flow (1 day delegation, 1 week etc. etc.)
+
+    args = parser.parse_args(cli_args)
+
+
+if __name__ == "__main__":
+    ret = main(sys.argv[1:])
+    sys.exit(ret)
