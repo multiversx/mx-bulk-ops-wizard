@@ -28,8 +28,10 @@ def _do_main(cli_args: list[str]):
     entrypoint = MyEntrypoint(configuration)
     accounts = load_accounts(Path(args.wallets))
 
+    entrypoint.recall_nonces(accounts)
+
     for account in accounts:
-        pass
+        claimable_rewards = entrypoint.get_claimable_rewards(account.address)
 
     # for each one, go to API, search for staking providers
     # for each, do claim transaction & wait it's processing at source / do all at once?
