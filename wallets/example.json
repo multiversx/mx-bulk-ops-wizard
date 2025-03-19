@@ -1,0 +1,40 @@
+[
+    {
+        "kind": "mnemonic",
+        "mnemonic": "moral volcano peasant pass circle pen over picture flat shop clap goat never lyrics gather prepare woman film husband gravity behind test tiger improve",
+        "addressIndices": [0, 1, 2, 3]
+    },
+    {
+        "kind": "mnemonic",
+        "mnemonicPath": "~/multiversx-sdk/testwallets/latest/users/mnemonic.txt",
+        "addressIndices": [4, 5]
+    },
+    {
+        "kind": "keystore",
+        "path": "~/multiversx-sdk/testwallets/latest/users/alice.json",
+        "password": "password",
+        "addressIndices": [0]
+    },
+    {
+        "kind": "keystore",
+        "path": "~/multiversx-sdk/testwallets/latest/users/bob.json",
+        "passwordPath": "~/multiversx-sdk/testwallets/latest/users/password.txt",
+        "addressIndices": [0]
+    },
+    {
+        "kind": "keystores",
+        "path": "~/multiversx-sdk/testwallets/latest/users",
+        "passwordsByFile": {
+            "carol.json": {
+                "password": "password"
+            },
+            "dan.json": {
+                "passwordPath": "~/multiversx-sdk/testwallets/latest/users/password.txt"
+            }
+        },
+        "addressIndicesByFile": {
+            "carol.json": [0],
+            "dan.json": [0]
+        }
+    }
+]
