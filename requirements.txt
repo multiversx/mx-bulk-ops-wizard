@@ -1,0 +1,4 @@
+requests>=2.32.0,<3.0.0
+ledgercomm[hid]
+rich==13.3.4
+multiversx-sdk[ledger]==1.2.0
