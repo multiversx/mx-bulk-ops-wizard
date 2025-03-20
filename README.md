@@ -23,8 +23,14 @@ pip install -r ./requirements.txt --upgrade
 WALLETS_CONFIG="./collector/testdata/wallets.config.json"
 ```
 
-## Claim rewards
+## Claim rewards (delegation)
 
 ```
 PYTHONPATH=. python3 ./collector/claim_rewards.py --network=devnet --wallets=$WALLETS_CONFIG --threshold=0
+```
+
+## Claim rewards (legacy delegation)
+
+```
+PYTHONPATH=. python3 ./collector/claim_rewards_legacy.py --network=devnet --wallets=$WALLETS_CONFIG --threshold=1
 ```

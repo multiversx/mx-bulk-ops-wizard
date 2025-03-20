@@ -46,6 +46,7 @@ def _do_main(cli_args: list[str]):
             if item.amount < threshold:
                 continue
 
+            print(f"Claim {item.amount} from {item.staking_provider.to_bech32()}")
             transaction = entrypoint.claim_rewards(account, item.staking_provider, gas_price)
             transactions.append(transaction)
 
