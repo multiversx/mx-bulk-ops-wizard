@@ -2,9 +2,12 @@ import sys
 from argparse import ArgumentParser
 from pathlib import Path
 
+from multiversx_sdk import Transaction
+
 from collector import errors, ux
 from collector.accounts_loader import load_accounts
 from collector.configuration import CONFIGURATIONS
+from collector.constants import DEFAULT_GAS_PRICE
 from collector.entrypoint import MyEntrypoint
 
 
@@ -21,20 +24,31 @@ def _do_main(cli_args: list[str]):
     parser.add_argument("--network", choices=CONFIGURATIONS.keys(), required=True, help="network name")
     parser.add_argument("--wallets", required=True, help="path of the wallets configuration file")
     parser.add_argument("--threshold", type=int, default=0, help="claim rewards larger than this amount")
+    parser.add_argument("--gas-price", type=int, default=DEFAULT_GAS_PRICE, help="claim rewards larger than this amount")
     args = parser.parse_args(cli_args)
 
     network = args.network
     configuration = CONFIGURATIONS[network]
     entrypoint = MyEntrypoint(configuration)
     accounts = load_accounts(Path(args.wallets))
+    threshold = args.threshold
+    gas_price = args.gas_price
 
     entrypoint.recall_nonces(accounts)
+    transactions: list[Transaction] = []
 
     for account in accounts:
         claimable_rewards = entrypoint.get_claimable_rewards(account.address)
 
-    # for each one, go to API, search for staking providers
-    # for each, do claim transaction & wait it's processing at source / do all at once?
+        for item in claimable_rewards:
+            if item.amount < threshold:
+                continue
+
+            transaction = entrypoint.claim_rewards(account, item.staking_provider, gas_price)
+            transactions.append(transaction)
+
+    ux.confirm_continuation("Ready to send transactions?")
+    entrypoint.send_multiple(transactions)
 
 
 if __name__ == "__main__":

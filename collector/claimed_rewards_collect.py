@@ -14,6 +14,10 @@ def main(cli_args: list[str] = sys.argv[1:]):
 
 def _do_main(cli_args: list[str]):
     parser = ArgumentParser()
+
+    # wallets, ...
+    # json file as input
+
     args = parser.parse_args(cli_args)
 
 
