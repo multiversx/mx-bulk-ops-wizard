@@ -1,4 +1,5 @@
 import sys
+import traceback
 from argparse import ArgumentParser
 
 from collector import errors, ux
@@ -8,6 +9,7 @@ def main(cli_args: list[str] = sys.argv[1:]):
     try:
         _do_main(cli_args)
     except errors.KnownError as err:
+        ux.show_critical_error(traceback.format_exc())
         ux.show_critical_error(err.get_pretty())
         return 1
 
