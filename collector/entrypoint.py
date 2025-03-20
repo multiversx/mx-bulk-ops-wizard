@@ -128,7 +128,7 @@ class MyEntrypoint:
             transaction_hash = self.transaction_computer.compute_transaction_hash(transaction).hex()
             transaction_on_network = self.proxy_network_provider.get_transaction(transaction_hash)
 
-            print(f"Processing started: {self.configuration.explorer_url}/transactions/{hash}")
+            print(f"Processing started: {self.configuration.explorer_url}/transactions/{transaction_hash}")
             return transaction_on_network
 
         transactions_on_network = Pool(NUM_PARALLEL_GET_TRANSACTION_REQUESTS).map(await_processing_started_one, transactions)
@@ -142,7 +142,7 @@ class MyEntrypoint:
                 options=self.transaction_awaiting_options
             )
 
-            print(f"Completed: {self.configuration.explorer_url}/transactions/{hash}")
+            print(f"Completed: {self.configuration.explorer_url}/transactions/{transaction_hash}")
             return transaction_on_network
 
         transactions_on_network = Pool(8).map(await_completed_one, transactions)

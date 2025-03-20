@@ -30,7 +30,7 @@ class WalletsConfiguration:
             elif kind == WalletKind.Keystores:
                 entries.append(KeystoresWalletEntry.new_from_dictionary(entry_raw))
 
-        return entries
+        return WalletsConfiguration(entries)
 
 
 class WalletEntry:
@@ -59,11 +59,12 @@ class MnemonicWalletEntry(WalletEntry):
         if is_mnemonic_missing or is_mnemonic_overconfigured:
             raise BadConfigurationError("either 'mnemonic' or 'mnemonic path' must be set")
 
-        if mnemonic_path:
-            self.mnemonic_path = Path(mnemonic_path).expanduser().resolve()
-            verify_file(self.mnemonic_path, ".txt")
+        # if mnemonic_path:
+        #     self.mnemonic_path = Path(mnemonic_path).expanduser().resolve()
+        #     verify_file(self.mnemonic_path, ".txt")
 
         self.mnemonic = mnemonic
+        self.mnemonic_path = mnemonic_path
         self.address_indices = address_indices or [0]
 
     @classmethod
@@ -74,7 +75,7 @@ class MnemonicWalletEntry(WalletEntry):
         mnemonic_path = data.get("mnemonicPath") or ""
         address_indices = data.get("addressIndices")
 
-        return MnemonicWalletEntry(
+        return cls(
             mnemonic=mnemonic,
             mnemonic_path=mnemonic_path,
             address_indices=address_indices
@@ -118,7 +119,7 @@ class KeystoreWalletEntry(WalletEntry):
         password_path = data.get("passwordPath") or ""
         address_indices = data.get("addressIndices")
 
-        return KeystoreWalletEntry(
+        return cls(
             path=path,
             password=password,
             password_path=password_path,
@@ -139,7 +140,7 @@ class KeystoresWalletEntry(WalletEntry):
         password_path = data.get("passwordPath") or ""
         address_indices = data.get("addressIndices")
 
-        return KeystoresWalletEntry()
+        return cls()
 
 
 def verify_file(path: Path, required_suffix: str):
