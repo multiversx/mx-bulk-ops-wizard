@@ -39,6 +39,8 @@ def _do_main(cli_args: list[str]):
     entrypoint.recall_nonces(accounts)
     transactions: list[Transaction] = []
 
+    ux.show_message("Looking for rewards to claim...")
+
     for account in accounts:
         print(account.address.to_bech32())
 
