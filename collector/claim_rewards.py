@@ -1,4 +1,5 @@
 import sys
+import traceback
 from argparse import ArgumentParser
 from pathlib import Path
 
@@ -15,6 +16,7 @@ def main(cli_args: list[str] = sys.argv[1:]):
     try:
         _do_main(cli_args)
     except errors.KnownError as err:
+        ux.show_critical_error(traceback.format_exc())
         ux.show_critical_error(err.get_pretty())
         return 1
 
@@ -47,7 +49,7 @@ def _do_main(cli_args: list[str]):
             transaction = entrypoint.claim_rewards(account, item.staking_provider, gas_price)
             transactions.append(transaction)
 
-    ux.confirm_continuation("Ready to send transactions?")
+    ux.confirm_continuation(f"Ready to claim rewards, by sending [green]{len(transactions)}[/green] transactions?")
     entrypoint.send_multiple(transactions)
 
 

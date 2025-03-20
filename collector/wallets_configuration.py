@@ -7,16 +7,30 @@ from collector.errors import BadConfigurationError
 
 
 class WalletsConfiguration:
-    def __init__(self) -> None:
-        pass
+    def __init__(self, entries: list["WalletEntry"]) -> None:
+        self.entries = entries
 
     @classmethod
     def new_from_file(cls, path: Path):
         path = path.expanduser().resolve()
         verify_file(path, ".json")
         content = path.read_text()
-        entries_dictionaries: list[dict] = json.loads(content)
-        # entries = []
+        entries_raw: list[dict[str, Any]] = json.loads(content)
+        entries: list[WalletEntry] = []
+
+        for entry_raw in entries_raw:
+            kind = entry_raw.get("kind")
+
+            if kind == WalletKind.Mnemonic:
+                entries.append(MnemonicWalletEntry.new_from_dictionary(entry_raw))
+            elif kind == WalletKind.Mnemonics:
+                raise NotImplementedError()
+            elif kind == WalletKind.Keystore:
+                entries.append(KeystoreWalletEntry.new_from_dictionary(entry_raw))
+            elif kind == WalletKind.Keystores:
+                entries.append(KeystoresWalletEntry.new_from_dictionary(entry_raw))
+
+        return entries
 
 
 class WalletEntry:
@@ -112,8 +126,9 @@ class KeystoreWalletEntry(WalletEntry):
         )
 
 
-class KeystoresWalletEntry:
-    pass
+class KeystoresWalletEntry(WalletEntry):
+    def __init__(self) -> None:
+        super().__init__(WalletKind.Keystores)
 
     @classmethod
     def new_from_dictionary(cls, data: dict[str, Any]):
@@ -124,12 +139,7 @@ class KeystoresWalletEntry:
         password_path = data.get("passwordPath") or ""
         address_indices = data.get("addressIndices")
 
-        return KeystoreWalletEntry(
-            path=path,
-            password=password,
-            password_path=password_path,
-            address_indices=address_indices
-        )
+        return KeystoresWalletEntry()
 
 
 def verify_file(path: Path, required_suffix: str):

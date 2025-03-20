@@ -1,6 +1,7 @@
 from rich import print
 from rich.markup import escape
 from rich.panel import Panel
+from rich.prompt import Confirm
 
 
 def show_message(message: str):
@@ -16,7 +17,6 @@ def show_warning(message: str):
 
 
 def confirm_continuation(message: str):
-    answer = input(message)
-    if answer.lower().strip() not in ["y", "yes"]:
+    if not Confirm.ask(message):
         print("Confirmation not given. Stopping...")
         exit(1)
