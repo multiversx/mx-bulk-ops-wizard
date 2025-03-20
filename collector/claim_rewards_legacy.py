@@ -40,12 +40,14 @@ def _do_main(cli_args: list[str]):
     transactions: list[Transaction] = []
 
     for account in accounts:
+        print(account.address.to_bech32())
+
         claimable_rewards = entrypoint.get_claimable_rewards_legacy(account.address)
 
         if claimable_rewards < threshold:
             continue
 
-        print(f"Claim {claimable_rewards} from legacy delegation")
+        print(f"\tClaim {claimable_rewards} from legacy delegation")
         transaction = entrypoint.claim_rewards_legacy(account, gas_price)
         transactions.append(transaction)
 

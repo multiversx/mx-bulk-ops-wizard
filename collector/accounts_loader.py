@@ -22,6 +22,7 @@ def load_accounts(wallets_configuration_file: Path) -> list[Account]:
         except Exception as error:
             raise KnownError(f"could not load accounts from wallet entry #{index}", error)
 
+    accounts = deduplicate_accounts(accounts)
     return accounts
 
 
@@ -142,6 +143,24 @@ def load_accounts_from_keystores(entry: KeystoresWalletEntry) -> list[Account]:
 def load_accounts_from_ledger(entry: LedgerWalletEntry) -> list[Account]:
     ux.show_warning("load_accounts_from_ledger() not yet implemented.")
     return []
+
+
+def deduplicate_accounts(accounts: list[Account]) -> list[Account]:
+    result: list[Account] = []
+    addresses: set[str] = set()
+
+    for account in accounts:
+        address = account.address.to_bech32()
+
+        if address in addresses:
+            continue
+
+        result.append(account)
+        addresses.add(address)
+
+    print(f"Deduplicated accounts: input = {len(accounts)}, output = {len(result)}.")
+
+    return result
 
 
 if __name__ == "__main__":

@@ -40,13 +40,15 @@ def _do_main(cli_args: list[str]):
     transactions: list[Transaction] = []
 
     for account in accounts:
+        print(account.address.to_bech32())
+
         claimable_rewards = entrypoint.get_claimable_rewards(account.address)
 
         for item in claimable_rewards:
             if item.amount < threshold:
                 continue
 
-            print(f"Claim {item.amount} from {item.staking_provider.to_bech32()}")
+            print(f"\tClaim {item.amount} from {item.staking_provider.to_bech32()}")
             transaction = entrypoint.claim_rewards(account, item.staking_provider, gas_price)
             transactions.append(transaction)
 

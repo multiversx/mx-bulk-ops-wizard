@@ -8,6 +8,7 @@ from multiversx_sdk import (Account, AccountOnNetwork, Address,
                             ProxyNetworkProvider, Transaction,
                             TransactionComputer, TransactionOnNetwork)
 
+from collector import ux
 from collector.configuration import Configuration
 from collector.constants import (
     ACCOUNT_AWAITING_PATIENCE_IN_MILLISECONDS,
@@ -145,5 +146,6 @@ class MyEntrypoint:
             print(f"Completed: {self.configuration.explorer_url}/transactions/{transaction_hash}")
             return transaction_on_network
 
-        transactions_on_network = Pool(8).map(await_completed_one, transactions)
+        ux.show_message(f"Transactions sent. Waiting for their completion...")
+        transactions_on_network = Pool(NUM_PARALLEL_GET_TRANSACTION_REQUESTS).map(await_completed_one, transactions)
         return transactions_on_network
