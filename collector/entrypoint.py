@@ -131,12 +131,13 @@ class MyEntrypoint:
 
         for transaction in transactions:
             transaction_hash = transaction.get("txHash")
+            timestamp = transaction.get("timestamp")
             results = transaction.get("results", [])
             reward_result = next((item for item in results if item.get("data") != CONTRACT_RESULTS_CODE_OK_ENCODED), None)
             amount = int(reward_result.get("value", 0)) if reward_result else 0
 
             if amount:
-                rewards.append(ReceivedRewards(RewardsType.Delegation, transaction_hash, amount))
+                rewards.append(ReceivedRewards(RewardsType.Delegation, transaction_hash, timestamp, amount))
 
         return rewards
 
@@ -159,12 +160,13 @@ class MyEntrypoint:
 
         for transaction in transactions:
             transaction_hash = transaction.get("txHash")
+            timestamp = transaction.get("timestamp")
             results = transaction.get("results", [])
             reward_result = next((item for item in results if item.get("data") != CONTRACT_RESULTS_CODE_OK_ENCODED), None)
             amount = int(reward_result.get("value", 0)) if reward_result else 0
 
             if amount:
-                rewards.append(ReceivedRewards(RewardsType.DelegationLegacy, transaction_hash, amount))
+                rewards.append(ReceivedRewards(RewardsType.DelegationLegacy, transaction_hash, timestamp, amount))
 
         return rewards
 
@@ -185,10 +187,11 @@ class MyEntrypoint:
 
         for transaction in transactions:
             transaction_hash = transaction.get("txHash")
+            timestamp = transaction.get("timestamp")
             amount = int(transaction.get("value", 0))
 
             if amount:
-                rewards.append(ReceivedRewards(RewardsType.Staking, transaction_hash, amount))
+                rewards.append(ReceivedRewards(RewardsType.Staking, transaction_hash, timestamp, amount))
 
         return rewards
 

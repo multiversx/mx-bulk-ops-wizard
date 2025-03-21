@@ -1,3 +1,4 @@
+import json
 import sys
 import traceback
 from argparse import ArgumentParser
@@ -10,7 +11,7 @@ from collector.accounts import load_accounts
 from collector.configuration import CONFIGURATIONS
 from collector.entrypoint import MyEntrypoint
 from collector.errors import UsageError
-from collector.resources import ReceivedRewards
+from collector.resources import ReceivedRewardsOfAccount
 from collector.utils import format_time
 
 
@@ -27,7 +28,6 @@ def _do_main(cli_args: list[str]):
     parser = ArgumentParser()
     parser.add_argument("--network", choices=CONFIGURATIONS.keys(), required=True, help="network name")
     parser.add_argument("--wallets", required=True, help="path of the wallets configuration file")
-    parser.add_argument("--threshold", type=int, default=0, help="collect rewards larger than this amount")
     parser.add_argument("--after-epoch", type=int, default=0, help="consider rewards received (claimed) after this epoch")
     parser.add_argument("--after-time", type=int, default=0, help="consider rewards received (claimed) after this timestamp")
     parser.add_argument("--outfile", required=True, help="where to save the prepared collection instructions")
@@ -37,9 +37,15 @@ def _do_main(cli_args: list[str]):
     configuration = CONFIGURATIONS[network]
     entrypoint = MyEntrypoint(configuration)
     containers = load_accounts(Path(args.wallets))
-    threshold = args.threshold
     after_epoch = args.after_epoch
     after_time = args.after_time
+    outfile = args.outfile
+
+    outfile_path = Path(outfile).expanduser().resolve()
+    outfile_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if outfile_path.exists():
+        raise UsageError("'output file' should not be an existing file")
 
     is_time_missing = not after_epoch and not after_time
     is_time_overconfigured = after_epoch and after_time
@@ -54,22 +60,31 @@ def _do_main(cli_args: list[str]):
 
     ux.show_message("Looking for previously received (claimed) rewards...")
 
-    all_rewards: list[ReceivedRewards] = []
+    all_rewards: list[ReceivedRewardsOfAccount] = []
 
     for container in containers:
         account = container.account
         address = account.address
+        rewards_of_account: ReceivedRewardsOfAccount = ReceivedRewardsOfAccount(address, container.wallet_name, [])
 
         print(address.to_bech32(), f"([yellow]{container.wallet_name}[/yellow])")
 
         rewards = entrypoint.get_claimed_rewards(address, after_time)
-        all_rewards.extend(rewards)
+        rewards_of_account.rewards.extend(rewards)
 
         rewards = entrypoint.get_claimed_rewards_legacy(address, after_time)
-        all_rewards.extend(rewards)
+        rewards_of_account.rewards.extend(rewards)
 
         rewards = entrypoint.get_received_staking_rewards(address, after_time)
-        all_rewards.extend(rewards)
+        rewards_of_account.rewards.extend(rewards)
+
+        rewards_of_account.sort_rewards()
+        all_rewards.append(rewards_of_account)
+
+    json_content = json.dumps([item.to_dictionary() for item in all_rewards], indent=4)
+    outfile_path.write_text(json_content)
+
+    ux.show_message(f"File saved: {outfile_path}")
 
 
 if __name__ == "__main__":
