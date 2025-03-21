@@ -30,7 +30,7 @@ def _do_main(cli_args: list[str]):
     parser.add_argument("--wallets", required=True, help="path of the wallets configuration file")
     parser.add_argument("--after-epoch", type=int, default=0, help="consider rewards received (claimed) after this epoch")
     parser.add_argument("--after-time", type=int, default=0, help="consider rewards received (claimed) after this timestamp")
-    parser.add_argument("--outfile", required=True, help="where to save the prepared collection instructions")
+    parser.add_argument("--outfile", required=True, help="where to save the rewards summary")
     args = parser.parse_args(cli_args)
 
     network = args.network

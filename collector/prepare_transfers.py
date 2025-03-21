@@ -26,25 +26,31 @@ def main(cli_args: list[str] = sys.argv[1:]):
 def _do_main(cli_args: list[str]):
     parser = ArgumentParser()
 
-    parser.add_argument("--network", choices=CONFIGURATIONS.keys(), required=True, help="network name")
-    parser.add_argument("--wallets", required=True, help="path of the wallets configuration file")
     parser.add_argument("--threshold", type=int, default=0, help="transfer amounts larger than this amount")
-    parser.add_argument("--infile", required=True, help="collection instructions (see 'collect_rewards.py')")
-    parser.add_argument("--receiver", required=True, help="the unique receiver")
+    parser.add_argument("--infile", required=True, help="rewards summary (see output of 'collect_rewards.py')")
+    parser.add_argument("--outfile", required=True, help="where to save the prepared transfers")
 
     args = parser.parse_args(cli_args)
 
-    network = args.network
-    configuration = CONFIGURATIONS[network]
-    entrypoint = MyEntrypoint(configuration)
-    containers = load_accounts(Path(args.wallets))
+    threshold = args.threshold
     infile = args.infile
     infile_path = Path(infile).expanduser().resolve()
 
     json_content = infile_path.read_text()
     data = json.loads(json_content)
+    all_rewards = [ReceivedRewardsOfAccount.new_from_dictionary(item) for item in data]
 
-    ux.confirm_continuation(f"Continue with creating and signing transactions?")
+    for rewards_of_account in all_rewards:
+        address = rewards_of_account.address
+        label = rewards_of_account.label
+        rewards = rewards_of_account.rewards
+        total_amount = sum([item.amount for item in rewards])
+
+        if total_amount < threshold:
+            continue
+
+        print(address.to_bech32(), f"([yellow]{label}[/yellow])")
+        print(f"\tAmount: [yellow]{format_amount(total_amount)} EGLD[/yellow]")
 
 
 if __name__ == "__main__":

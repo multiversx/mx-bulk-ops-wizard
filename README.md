@@ -58,15 +58,23 @@ Here's what a wallet configuration file would look like:
 
 ## Setup environment variables
 
-Custom URLs for API & Proxy, if default ones are not sufficient (for example, due to rate limiting):
+Custom URLs for API & Proxy, if default ones are not sufficient (for example, due to rate limiting) - if set, they are taken into consideration by the scripts, under the hood:
 
 ```
 export MAINNET_PROXY_URL="..."
 export MAINNET_API_URL="..."
 ```
 
+Path towards the wallet configuration file (not handled internally, defined for example purposes):
+
 ```
 WALLETS_CONFIG="./collector/testdata/wallets.config.json"
+```
+
+Receiver of the rewards (not handled internally, defined for example purposes):
+
+```
+export RECEIVER="erd1testnlersh4z0wsv8kjx39me4rmnvjkwu8dsaea7ukdvvc9z396qykv7z7"
 ```
 
 ## Claim rewards (delegation)
@@ -81,8 +89,20 @@ PYTHONPATH=. python3 ./collector/claim_rewards.py --network=devnet --wallets=$WA
 PYTHONPATH=. python3 ./collector/claim_rewards_legacy.py --network=devnet --wallets=$WALLETS_CONFIG --threshold=1
 ```
 
-## Collect previously claimed (received) rewards
+## Summarize previously claimed (received) rewards
 
 ```
 PYTHONPATH=. python3 ./collector/collect_rewards.py --network=devnet --wallets=$WALLETS_CONFIG --after-epoch=3000 --outfile=rewards.json
+```
+
+## Prepare amounts to transfer
+
+```
+PYTHONPATH=. python3 ./collector/prepare_transfers.py --threshold=1 --infile=rewards.json --outfile=transfers.json
+```
+
+## Transfer amounts to an account
+
+```
+PYTHONPATH=. python3 ./collector/do_transfers.py --network=devnet --wallets=$WALLETS_CONFIG --infile=transfers.json --receiver=${RECEIVER}
 ```
