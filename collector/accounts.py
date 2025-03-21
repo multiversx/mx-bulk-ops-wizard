@@ -12,26 +12,26 @@ from collector.wallets_configuration import (KeystoresWalletEntry,
                                              WalletsConfiguration)
 
 
-class AccountContainer:
+class AccountWrapper:
     def __init__(self, wallet_name: str, account: Account) -> None:
         self.wallet_name = wallet_name
         self.account = account
 
 
-def load_accounts(wallets_configuration_file: Path) -> list[AccountContainer]:
+def load_accounts(wallets_configuration_file: Path) -> list[AccountWrapper]:
     configuration = WalletsConfiguration.new_from_file(wallets_configuration_file)
-    containers: list[AccountContainer] = []
+    wrappers: list[AccountWrapper] = []
 
     for index, entry in enumerate(configuration.entries):
         ux.show_message(f"Loading accounts from wallet entry #{index} [yellow]{entry.name}[/yellow]...")
         try:
             accounts = load_accounts_from_wallet_entry(entry)
-            containers.extend([AccountContainer(entry.name, account) for account in accounts])
+            wrappers.extend([AccountWrapper(entry.name, account) for account in accounts])
         except Exception as error:
             raise KnownError(f"could not load accounts from wallet entry #{index} [yellow]{entry.name}[/yellow]", error)
 
-    containers = deduplicate_accounts(containers)
-    return containers
+    wrappers = deduplicate_accounts(wrappers)
+    return wrappers
 
 
 def load_accounts_from_wallet_entry(entry: WalletEntry) -> list[Account]:
@@ -173,20 +173,20 @@ def load_accounts_from_ledger(entry: LedgerWalletEntry) -> list[Account]:
     return []
 
 
-def deduplicate_accounts(containers: list[AccountContainer]) -> list[AccountContainer]:
-    result: list[AccountContainer] = []
+def deduplicate_accounts(wrappers: list[AccountWrapper]) -> list[AccountWrapper]:
+    result: list[AccountWrapper] = []
     addresses: set[str] = set()
 
-    for container in containers:
-        address = container.account.address.to_bech32()
+    for wrapper in wrappers:
+        address = wrapper.account.address.to_bech32()
 
         if address in addresses:
             continue
 
-        result.append(container)
+        result.append(wrapper)
         addresses.add(address)
 
-    print(f"Deduplicated accounts: input = {len(containers)}, output = {len(result)}.")
+    print(f"Deduplicated accounts: input = {len(wrappers)}, output = {len(result)}.")
 
     return result
 

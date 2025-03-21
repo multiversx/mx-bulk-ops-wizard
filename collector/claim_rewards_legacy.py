@@ -11,6 +11,7 @@ from collector.accounts import load_accounts
 from collector.configuration import CONFIGURATIONS
 from collector.constants import DEFAULT_GAS_PRICE
 from collector.entrypoint import MyEntrypoint
+from collector.transactions import TransactionWrapper
 from collector.utils import format_amount
 
 
@@ -34,20 +35,21 @@ def _do_main(cli_args: list[str]):
     network = args.network
     configuration = CONFIGURATIONS[network]
     entrypoint = MyEntrypoint(configuration)
-    containers = load_accounts(Path(args.wallets))
+    accounts_wrappers = load_accounts(Path(args.wallets))
     threshold = args.threshold
     gas_price = args.gas_price
 
-    entrypoint.recall_nonces([container.account for container in containers])
-    transactions: list[Transaction] = []
+    entrypoint.recall_nonces([item.account for item in accounts_wrappers])
+    transactions_wrappers: list[TransactionWrapper] = []
 
     ux.show_message("Looking for rewards to claim...")
 
-    for container in containers:
-        account = container.account
+    for account_wrapper in accounts_wrappers:
+        account = account_wrapper.account
         address = account.address
+        label = account_wrapper.wallet_name
 
-        print(address.to_bech32(), f"([yellow]{container.wallet_name}[/yellow])")
+        print(address.to_bech32(), f"([yellow]{label}[/yellow])")
 
         claimable_rewards = entrypoint.get_claimable_rewards_legacy(address)
 
@@ -56,10 +58,10 @@ def _do_main(cli_args: list[str]):
 
         print(f"\tClaim {format_amount(claimable_rewards)} EGLD from legacy delegation")
         transaction = entrypoint.claim_rewards_legacy(account, gas_price)
-        transactions.append(transaction)
+        transactions_wrappers.append(TransactionWrapper(transaction, label))
 
-    ux.confirm_continuation(f"Ready to claim rewards, by sending [green]{len(transactions)}[/green] transactions?")
-    entrypoint.send_multiple(transactions)
+    ux.confirm_continuation(f"Ready to claim rewards, by sending [green]{len(transactions_wrappers)}[/green] transactions?")
+    entrypoint.send_multiple(transactions_wrappers)
 
 
 if __name__ == "__main__":

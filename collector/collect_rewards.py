@@ -36,7 +36,7 @@ def _do_main(cli_args: list[str]):
     network = args.network
     configuration = CONFIGURATIONS[network]
     entrypoint = MyEntrypoint(configuration)
-    containers = load_accounts(Path(args.wallets))
+    accounts_wrappers = load_accounts(Path(args.wallets))
     after_epoch = args.after_epoch
     after_time = args.after_time
     outfile = args.outfile
@@ -62,12 +62,12 @@ def _do_main(cli_args: list[str]):
 
     all_rewards: list[ReceivedRewardsOfAccount] = []
 
-    for container in containers:
-        account = container.account
+    for account_wrapper in accounts_wrappers:
+        account = account_wrapper.account
         address = account.address
-        rewards_of_account: ReceivedRewardsOfAccount = ReceivedRewardsOfAccount(address, container.wallet_name, [])
+        rewards_of_account: ReceivedRewardsOfAccount = ReceivedRewardsOfAccount(address, account_wrapper.wallet_name, [])
 
-        print(address.to_bech32(), f"([yellow]{container.wallet_name}[/yellow])")
+        print(address.to_bech32(), f"([yellow]{account_wrapper.wallet_name}[/yellow])")
 
         rewards = entrypoint.get_claimed_rewards(address, after_time)
         rewards_of_account.rewards.extend(rewards)

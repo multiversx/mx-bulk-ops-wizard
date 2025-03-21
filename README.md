@@ -68,7 +68,7 @@ export MAINNET_API_URL="..."
 Path towards the wallet configuration file (not handled internally, defined for example purposes):
 
 ```
-WALLETS_CONFIG="./collector/testdata/wallets.config.json"
+export WALLETS_CONFIG="./collector/testdata/wallets.config.json"
 ```
 
 Receiver of the rewards (not handled internally, defined for example purposes):

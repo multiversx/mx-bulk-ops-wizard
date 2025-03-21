@@ -6,7 +6,7 @@ from multiversx_sdk import (Account, AccountOnNetwork, Address,
                             ApiNetworkProvider, AwaitingOptions, GenericError,
                             NetworkEntrypoint, NetworkProviderConfig,
                             ProxyNetworkProvider, Transaction,
-                            TransactionComputer, TransactionOnNetwork)
+                            TransactionOnNetwork)
 from rich import print
 
 from collector import ux
@@ -22,6 +22,7 @@ from collector.constants import (
     NUM_PARALLEL_GET_TRANSACTION_REQUESTS)
 from collector.errors import KnownError, TransientError
 from collector.rewards import ClaimableRewards, ReceivedRewards, RewardsType
+from collector.transactions import TransactionWrapper
 from collector.utils import split_to_chunks
 
 
@@ -54,8 +55,6 @@ class MyEntrypoint:
             polling_interval_in_milliseconds=ACCOUNT_AWAITING_POLLING_TIMEOUT_IN_MILLISECONDS,
             patience_in_milliseconds=ACCOUNT_AWAITING_PATIENCE_IN_MILLISECONDS
         )
-
-        self.transaction_computer = TransactionComputer()
 
     def get_start_of_epoch_timestamp(self, epoch: int) -> int:
         url = f"network/epoch-start/{METACHAIN_ID}/by-epoch/{epoch}"
@@ -206,13 +205,18 @@ class MyEntrypoint:
 
         return transaction
 
-    def send_multiple(self, transactions: list[Transaction], chunk_size: int = DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS):
-        print(f"Sending {len(transactions)} transactions...")
+    def send_multiple(self, wrappers: list[TransactionWrapper], chunk_size: int = DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS):
+        print(f"Sending {len(wrappers)} transactions...")
 
-        chunks = list(split_to_chunks(transactions, chunk_size))
+        chunks: list[list[TransactionWrapper]] = list(split_to_chunks(wrappers, chunk_size))
 
         for index, chunk in enumerate(chunks):
-            num_sent, _ = self.network_entrypoint.send_transactions(chunk)
+            print(f"Chunk {index}:")
+
+            for item in chunk:
+                print(f"\t{item.hash} ([yellow]{item.label}[/yellow])")
+
+            num_sent, _ = self.network_entrypoint.send_transactions([item.transaction for item in chunk])
             print(f"Chunk {index}: sent {num_sent} transactions.")
 
             if num_sent != len(chunk):
@@ -220,39 +224,48 @@ class MyEntrypoint:
 
             self.await_processing_started(chunk)
 
-        self.await_completed(transactions)
+        self.await_completed(wrappers)
 
-    def await_processing_started(self, transactions: list[Transaction]) -> list[TransactionOnNetwork]:
-        def await_processing_started_one(transaction: Transaction) -> TransactionOnNetwork:
-            condition: Callable[[AccountOnNetwork], bool] = lambda account: account.nonce > transaction.nonce
+    def await_processing_started(self, wrappers: list[TransactionWrapper]) -> list[TransactionOnNetwork]:
+        print(f"Await processing started for {len(wrappers)} transactions...")
+
+        def await_processing_started_one(wrapper: TransactionWrapper) -> TransactionOnNetwork:
+            condition: Callable[[AccountOnNetwork], bool] = lambda account: account.nonce > wrapper.transaction.nonce
             self.proxy_network_provider.await_account_on_condition(
-                address=transaction.sender,
+                address=wrapper.transaction.sender,
                 condition=condition,
                 options=self.account_awaiting_options,
             )
 
-            transaction_hash = self.transaction_computer.compute_transaction_hash(transaction).hex()
-            transaction_on_network = self.proxy_network_provider.get_transaction(transaction_hash)
+            transaction_on_network = self.proxy_network_provider.get_transaction(wrapper.hash)
 
-            print(f"Processing started: {self.configuration.explorer_url}/transactions/{transaction_hash}")
+            print(f"Started: {self.configuration.explorer_url}/transactions/{wrapper.hash}")
             return transaction_on_network
 
-        transactions_on_network = Pool(NUM_PARALLEL_GET_TRANSACTION_REQUESTS).map(await_processing_started_one, transactions)
+        transactions_on_network = Pool(NUM_PARALLEL_GET_TRANSACTION_REQUESTS).map(
+            await_processing_started_one,
+            wrappers
+        )
+
         return transactions_on_network
 
-    def await_completed(self, transactions: list[Transaction]) -> list[TransactionOnNetwork]:
-        def await_completed_one(transaction: Transaction) -> TransactionOnNetwork:
-            transaction_hash = self.transaction_computer.compute_transaction_hash(transaction).hex()
+    def await_completed(self, wrappers: list[TransactionWrapper]) -> list[TransactionOnNetwork]:
+        def await_completed_one(wrapper: TransactionWrapper) -> TransactionOnNetwork:
             transaction_on_network = self.api_network_provider.await_transaction_completed(
-                transaction_hash=transaction_hash,
+                transaction_hash=wrapper.hash,
                 options=self.transaction_awaiting_options
             )
 
-            print(f"Completed: {self.configuration.explorer_url}/transactions/{transaction_hash}")
+            print(f"Completed: {self.configuration.explorer_url}/transactions/{wrapper.hash}")
             return transaction_on_network
 
         ux.show_message(f"Transactions sent. Waiting for their completion...")
-        transactions_on_network = Pool(NUM_PARALLEL_GET_TRANSACTION_REQUESTS).map(await_completed_one, transactions)
+
+        transactions_on_network = Pool(NUM_PARALLEL_GET_TRANSACTION_REQUESTS).map(
+            await_completed_one,
+            wrappers
+        )
+
         return transactions_on_network
 
     def _api_do_get(self, url: str, url_parameters: dict[str, Any]):

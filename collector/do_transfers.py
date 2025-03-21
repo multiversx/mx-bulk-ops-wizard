@@ -4,13 +4,14 @@ import traceback
 from argparse import ArgumentParser
 from pathlib import Path
 
-from multiversx_sdk import Address, Transaction
+from multiversx_sdk import Address
 from rich import print
 
 from collector import errors, ux
-from collector.accounts import AccountContainer, load_accounts
+from collector.accounts import AccountWrapper, load_accounts
 from collector.configuration import CONFIGURATIONS
 from collector.entrypoint import MyEntrypoint
+from collector.transactions import TransactionWrapper
 from collector.transfers import Transfer
 
 
@@ -36,31 +37,31 @@ def _do_main(cli_args: list[str]):
     network = args.network
     configuration = CONFIGURATIONS[network]
     entrypoint = MyEntrypoint(configuration)
-    containers = load_accounts(Path(args.wallets))
+    accounts_wrappers = load_accounts(Path(args.wallets))
     infile = args.infile
     infile_path = Path(infile).expanduser().resolve()
     receiver = Address.new_from_bech32(args.receiver)
 
-    containers_by_address: dict[str, AccountContainer] = {
-        container.account.address.to_bech32(): container for container in containers
+    accounts_wrappers_by_addresses: dict[str, AccountWrapper] = {
+        item.account.address.to_bech32(): item for item in accounts_wrappers
     }
 
     json_content = infile_path.read_text()
     data = json.loads(json_content)
     transfers = [Transfer.new_from_dictionary(item) for item in data]
 
-    entrypoint.recall_nonces([container.account for container in containers])
-    transactions: list[Transaction] = []
+    entrypoint.recall_nonces([item.account for item in accounts_wrappers])
+    transactions_wrappers: list[TransactionWrapper] = []
 
     ux.show_message("Creating and signing transactions...")
 
     for transfer in transfers:
-        sender = containers_by_address[transfer.sender.to_bech32()]
+        sender = accounts_wrappers_by_addresses[transfer.sender.to_bech32()]
         transaction = entrypoint.transfer_value(sender.account, receiver, transfer.amount)
-        transactions.append(transaction)
+        transactions_wrappers.append(TransactionWrapper(transaction, transfer.label))
 
-    ux.confirm_continuation(f"Ready to transfer rewards, by sending [green]{len(transactions)}[/green] transactions?")
-    entrypoint.send_multiple(transactions)
+    ux.confirm_continuation(f"Ready to transfer rewards, by sending [green]{len(transactions_wrappers)}[/green] transactions?")
+    entrypoint.send_multiple(transactions_wrappers)
 
 
 if __name__ == "__main__":
