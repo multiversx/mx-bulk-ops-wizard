@@ -36,8 +36,9 @@ class WalletsConfiguration:
 
 
 class WalletEntry:
-    def __init__(self, kind: "WalletKind") -> None:
+    def __init__(self, kind: "WalletKind", name: str) -> None:
         self.kind = kind
+        self.name = name
 
 
 class WalletKind(str, Enum):
@@ -49,10 +50,11 @@ class WalletKind(str, Enum):
 
 class MnemonicWalletEntry(WalletEntry):
     def __init__(self,
+                 name: str,
                  mnemonic: str,
                  mnemonic_file: str,
                  address_indices: list[int]) -> None:
-        super().__init__(WalletKind.Mnemonic)
+        super().__init__(WalletKind.Mnemonic, name)
 
         self.mnemonic = mnemonic
         self.mnemonic_file = mnemonic_file
@@ -62,11 +64,13 @@ class MnemonicWalletEntry(WalletEntry):
     def new_from_dictionary(cls, data: dict[str, Any]):
         assert data["kind"] == WalletKind.Mnemonic
 
+        name = data.get("name") or ""
         mnemonic = data.get("mnemonic") or ""
         mnemonic_file = data.get("mnemonicFile") or ""
         address_indices = data.get("addressIndices") or []
 
         return cls(
+            name=name,
             mnemonic=mnemonic,
             mnemonic_file=mnemonic_file,
             address_indices=address_indices
@@ -75,11 +79,12 @@ class MnemonicWalletEntry(WalletEntry):
 
 class KeystoreWalletEntry(WalletEntry):
     def __init__(self,
+                 name: str,
                  file: str,
                  password: str,
                  password_file: str,
                  address_indices: list[int]) -> None:
-        super().__init__(WalletKind.Keystore)
+        super().__init__(WalletKind.Keystore, name)
 
         self.file = file
         self.password = password
@@ -90,12 +95,14 @@ class KeystoreWalletEntry(WalletEntry):
     def new_from_dictionary(cls, data: dict[str, Any]):
         assert data["kind"] == WalletKind.Keystore
 
+        name = data.get("name") or ""
         file = data.get("file") or ""
         password = data.get("password") or ""
         password_file = data.get("passwordFile") or ""
         address_indices = data.get("addressIndices") or []
 
         return cls(
+            name=name,
             file=file,
             password=password,
             password_file=password_file,
@@ -105,10 +112,11 @@ class KeystoreWalletEntry(WalletEntry):
 
 class KeystoresWalletEntry(WalletEntry):
     def __init__(self,
+                 name: str,
                  folder: str,
                  unique_password: str,
                  unique_password_file: str) -> None:
-        super().__init__(WalletKind.Keystores)
+        super().__init__(WalletKind.Keystores, name)
 
         self.folder = folder
         self.unique_password = unique_password
@@ -118,11 +126,13 @@ class KeystoresWalletEntry(WalletEntry):
     def new_from_dictionary(cls, data: dict[str, Any]):
         assert data["kind"] == WalletKind.Keystores
 
+        name = data.get("name") or ""
         folder = data.get("folder") or ""
         unique_password = data.get("uniquePassword") or ""
         unique_password_file = data.get("uniquePasswordFile") or ""
 
         return cls(
+            name=name,
             folder=folder,
             unique_password=unique_password,
             unique_password_file=unique_password_file
@@ -131,8 +141,9 @@ class KeystoresWalletEntry(WalletEntry):
 
 class LedgerWalletEntry(WalletEntry):
     def __init__(self,
+                 name: str,
                  address_indices: list[int]) -> None:
-        super().__init__(WalletKind.Ledger)
+        super().__init__(WalletKind.Ledger, name)
 
         self.address_indices = address_indices
 
@@ -140,8 +151,10 @@ class LedgerWalletEntry(WalletEntry):
     def new_from_dictionary(cls, data: dict[str, Any]):
         assert data["kind"] == WalletKind.Ledger
 
+        name = data.get("name") or ""
         address_indices = data.get("addressIndices") or []
 
         return cls(
+            name=name,
             address_indices=address_indices
         )

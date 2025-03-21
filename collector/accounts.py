@@ -16,7 +16,7 @@ def load_accounts(wallets_configuration_file: Path) -> list[Account]:
     accounts: list[Account] = []
 
     for index, entry in enumerate(configuration.entries):
-        print(f"Loading accounts from wallet entry #{index}...")
+        ux.show_message(f"Loading accounts from wallet entry #{index}: [yellow]{entry.name}[/yellow]...")
         try:
             accounts.extend(load_accounts_from_wallet_entry(entry))
         except Exception as error:

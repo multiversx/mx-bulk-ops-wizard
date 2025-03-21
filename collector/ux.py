@@ -5,7 +5,7 @@ from rich.prompt import Confirm
 
 
 def show_message(message: str):
-    print(Panel(f"[green]{escape(message)}"))
+    print(Panel(f"[green]{message}"))
 
 
 def show_critical_error(message: str):
