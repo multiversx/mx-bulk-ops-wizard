@@ -28,7 +28,7 @@ class ReceivedRewards:
 
     @classmethod
     def new_from_dictionary(cls, data: dict[str, Any]):
-        type = data["type"]
+        type = RewardsType(data["type"])
         transaction_hash = data["transaction"]
         timestamp = data["timestamp"]
         amount = int(data["amount"])
@@ -37,7 +37,7 @@ class ReceivedRewards:
 
     def to_dictionary(self) -> dict[str, Any]:
         return {
-            "type": self.type.name,
+            "type": self.type.value,
             "transaction": self.transaction_hash,
             "timestamp": self.timestamp,
             "timestampFormatted": format_time(self.timestamp),
