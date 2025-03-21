@@ -14,13 +14,14 @@ from collector.configuration import Configuration
 from collector.constants import (
     ACCOUNT_AWAITING_PATIENCE_IN_MILLISECONDS,
     ACCOUNT_AWAITING_POLLING_TIMEOUT_IN_MILLISECONDS,
-    DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS,
-    MAX_NUM_HISTORICAL_TRANSACTIONS_TO_FETCH, METACHAIN_ID,
+    CONTRACT_RESULTS_CODE_OK_ENCODED, DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS,
+    MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_CLAIM_REWARDS,
+    MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_REWARDS, METACHAIN_ID,
     NETWORK_PROVIDER_NUM_RETRIES, NETWORK_PROVIDER_TIMEOUT_SECONDS,
     NETWORK_PROVIDERS_RETRY_DELAY_IN_SECONDS, NUM_PARALLEL_GET_NONCE_REQUESTS,
     NUM_PARALLEL_GET_TRANSACTION_REQUESTS)
 from collector.errors import KnownError, TransientError
-from collector.resources import ClaimableRewards, ReceivedRewards
+from collector.resources import ClaimableRewards, ReceivedRewards, RewardsType
 from collector.utils import split_to_chunks
 
 
@@ -113,37 +114,82 @@ class MyEntrypoint:
 
     def get_claimed_rewards(self, delegator: Address, after_timestamp: int) -> list[ReceivedRewards]:
         url = f"accounts/{delegator.to_bech32()}/transactions"
-        data = self._api_do_get(url, {
+        size = MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_CLAIM_REWARDS
+        transactions = self._api_do_get(url, {
+            "status": "success",
             "function": "claimRewards",
+            "withScResults": "true",
             "receiverShard": METACHAIN_ID,
             "after": after_timestamp,
-            "size": MAX_NUM_HISTORICAL_TRANSACTIONS_TO_FETCH
+            "size": size
         })
 
+        if len(transactions) == size:
+            print(f"\tRetrieved {size} transactions. [red]There could be more![/red]")
+
         rewards: list[ReceivedRewards] = []
+
+        for transaction in transactions:
+            transaction_hash = transaction.get("txHash")
+            results = transaction.get("results", [])
+            reward_result = next((item for item in results if item.get("data") != CONTRACT_RESULTS_CODE_OK_ENCODED), None)
+            amount = int(reward_result.get("value", 0)) if reward_result else 0
+
+            if amount:
+                rewards.append(ReceivedRewards(RewardsType.Delegation, transaction_hash, amount))
+
         return rewards
 
     def get_claimed_rewards_legacy(self, delegator: Address, after_timestamp: int) -> list[ReceivedRewards]:
         url = f"accounts/{delegator.to_bech32()}/transactions"
-        data = self._api_do_get(url, {
+        size = MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_CLAIM_REWARDS
+        transactions = self._api_do_get(url, {
+            "status": "success",
             "function": "claimRewards",
+            "withScResults": "true",
             "receiver": self.configuration.legacy_delegation_contract,
             "after": after_timestamp,
-            "size": MAX_NUM_HISTORICAL_TRANSACTIONS_TO_FETCH
+            "size": size
         })
 
+        if len(transactions) == size:
+            print(f"\tRetrieved {size} transactions. [red]There could be more![/red]")
+
         rewards: list[ReceivedRewards] = []
+
+        for transaction in transactions:
+            transaction_hash = transaction.get("txHash")
+            results = transaction.get("results", [])
+            reward_result = next((item for item in results if item.get("data") != CONTRACT_RESULTS_CODE_OK_ENCODED), None)
+            amount = int(reward_result.get("value", 0)) if reward_result else 0
+
+            if amount:
+                rewards.append(ReceivedRewards(RewardsType.DelegationLegacy, transaction_hash, amount))
+
         return rewards
 
     def get_received_staking_rewards(self, node_owner: Address, after_timestamp: int) -> list[ReceivedRewards]:
         url = f"accounts/{node_owner.to_bech32()}/transactions"
-        data = self._api_do_get(url, {
+        size = MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_REWARDS
+        transactions = self._api_do_get(url, {
             "senderShard": METACHAIN_ID,
+            "function": "reward",
             "after": after_timestamp,
-            "size": MAX_NUM_HISTORICAL_TRANSACTIONS_TO_FETCH
+            "size": size
         })
 
+        if len(transactions) == size:
+            print(f"\tRetrieved {size} transactions. [red]There could be more![/red]")
+
         rewards: list[ReceivedRewards] = []
+
+        for transaction in transactions:
+            transaction_hash = transaction.get("txHash")
+            amount = int(transaction.get("value", 0))
+
+            if amount:
+                rewards.append(ReceivedRewards(RewardsType.Staking, transaction_hash, amount))
+
         return rewards
 
     def send_multiple(self, transactions: list[Transaction], chunk_size: int = DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS):
@@ -204,7 +250,7 @@ class MyEntrypoint:
             except GenericError as error:
                 latest_error = error
 
-                print(f"Attempt #{attempt}, [red]failed to get {error.url}[/red].")
+                print(f"Attempt #{attempt}, [red]failed to get {error.url}[/red]")
 
                 is_last_attempt = attempt == NETWORK_PROVIDER_NUM_RETRIES - 1
                 if not is_last_attempt:
