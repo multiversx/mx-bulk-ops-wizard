@@ -46,8 +46,13 @@ class ReceivedRewardsOfAccount:
         self.rewards.sort(key=lambda item: item.timestamp, reverse=True)
 
     def to_dictionary(self) -> dict[str, Any]:
+        num_rewards = len(self.rewards)
+        total_amount = sum([item.amount for item in self.rewards])
+
         return {
             "address": self.address.to_bech32(),
             "label": self.label,
+            "numRewards": num_rewards,
+            "totalAmountFormatted": f"{format_amount(total_amount, num_decimals=6)} EGLD",
             "rewards": [item.to_dictionary() for item in self.rewards]
         }
