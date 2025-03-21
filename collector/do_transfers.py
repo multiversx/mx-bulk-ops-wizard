@@ -3,6 +3,7 @@ import traceback
 from argparse import ArgumentParser
 
 from collector import errors, ux
+from collector.configuration import CONFIGURATIONS
 
 
 def main(cli_args: list[str] = sys.argv[1:]):
@@ -17,8 +18,10 @@ def main(cli_args: list[str] = sys.argv[1:]):
 def _do_main(cli_args: list[str]):
     parser = ArgumentParser()
 
-    # wallets, ...
-    # json file as input
+    parser.add_argument("--network", choices=CONFIGURATIONS.keys(), required=True, help="network name")
+    parser.add_argument("--wallets", required=True, help="path of the wallets configuration file")
+    parser.add_argument("--threshold", type=int, default=0, help="collect rewards larger than this amount")
+    parser.add_argument("--infiles", nargs='+', help="collection instructions (see 'collect_rewards.py')")
 
     args = parser.parse_args(cli_args)
 
