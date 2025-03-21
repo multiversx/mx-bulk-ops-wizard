@@ -26,6 +26,9 @@ def _do_main(cli_args: list[str]):
     parser.add_argument("--outfile", required=True, help="where to save the prepared collection instructions")
     args = parser.parse_args(cli_args)
 
+    after_epoch = args.after_epoch
+    after_time = args.after_time
+
 
 if __name__ == "__main__":
     ret = main(sys.argv[1:])

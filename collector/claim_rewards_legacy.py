@@ -4,12 +4,14 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 from multiversx_sdk import Transaction
+from rich import print
 
 from collector import errors, ux
-from collector.accounts_loader import load_accounts
+from collector.accounts import load_accounts
 from collector.configuration import CONFIGURATIONS
 from collector.constants import DEFAULT_GAS_PRICE
 from collector.entrypoint import MyEntrypoint
+from collector.utils import format_amount
 
 
 def main(cli_args: list[str] = sys.argv[1:]):
@@ -32,24 +34,26 @@ def _do_main(cli_args: list[str]):
     network = args.network
     configuration = CONFIGURATIONS[network]
     entrypoint = MyEntrypoint(configuration)
-    accounts = load_accounts(Path(args.wallets))
+    containers = load_accounts(Path(args.wallets))
     threshold = args.threshold
     gas_price = args.gas_price
 
-    entrypoint.recall_nonces(accounts)
+    entrypoint.recall_nonces([container.account for container in containers])
     transactions: list[Transaction] = []
 
     ux.show_message("Looking for rewards to claim...")
 
-    for account in accounts:
-        print(account.address.to_bech32())
+    for container in containers:
+        account = container.account
+
+        print(account.address.to_bech32(), f"([yellow]{container.wallet_name}[/yellow])")
 
         claimable_rewards = entrypoint.get_claimable_rewards_legacy(account.address)
 
         if claimable_rewards < threshold:
             continue
 
-        print(f"\tClaim {claimable_rewards} from legacy delegation")
+        print(f"\tClaim {format_amount(claimable_rewards)} EGLD from legacy delegation")
         transaction = entrypoint.claim_rewards_legacy(account, gas_price)
         transactions.append(transaction)
 

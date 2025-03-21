@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from multiversx_sdk import Account
+from multiversx_sdk import Account, UserSecretKey
 
 from collector import ux
 from collector.errors import BadConfigurationError, KnownError
@@ -11,19 +11,26 @@ from collector.wallets_configuration import (KeystoresWalletEntry,
                                              WalletsConfiguration)
 
 
-def load_accounts(wallets_configuration_file: Path) -> list[Account]:
+class AccountContainer:
+    def __init__(self, wallet_name: str, account: Account) -> None:
+        self.wallet_name = wallet_name
+        self.account = account
+
+
+def load_accounts(wallets_configuration_file: Path) -> list[AccountContainer]:
     configuration = WalletsConfiguration.new_from_file(wallets_configuration_file)
-    accounts: list[Account] = []
+    containers: list[AccountContainer] = []
 
     for index, entry in enumerate(configuration.entries):
-        ux.show_message(f"Loading accounts from wallet entry #{index}: [yellow]{entry.name}[/yellow]...")
+        ux.show_message(f"Loading accounts from wallet entry #{index} [yellow]{entry.name}[/yellow]...")
         try:
-            accounts.extend(load_accounts_from_wallet_entry(entry))
+            accounts = load_accounts_from_wallet_entry(entry)
+            containers.extend([AccountContainer(entry.name, account) for account in accounts])
         except Exception as error:
-            raise KnownError(f"could not load accounts from wallet entry #{index}", error)
+            raise KnownError(f"could not load accounts from wallet entry #{index} [yellow]{entry.name}[/yellow]", error)
 
-    accounts = deduplicate_accounts(accounts)
-    return accounts
+    containers = deduplicate_accounts(containers)
+    return containers
 
 
 def load_accounts_from_wallet_entry(entry: WalletEntry) -> list[Account]:
@@ -145,20 +152,20 @@ def load_accounts_from_ledger(entry: LedgerWalletEntry) -> list[Account]:
     return []
 
 
-def deduplicate_accounts(accounts: list[Account]) -> list[Account]:
-    result: list[Account] = []
+def deduplicate_accounts(containers: list[AccountContainer]) -> list[AccountContainer]:
+    result: list[AccountContainer] = []
     addresses: set[str] = set()
 
-    for account in accounts:
-        address = account.address.to_bech32()
+    for container in containers:
+        address = container.account.address.to_bech32()
 
         if address in addresses:
             continue
 
-        result.append(account)
+        result.append(container)
         addresses.add(address)
 
-    print(f"Deduplicated accounts: input = {len(accounts)}, output = {len(result)}.")
+    print(f"Deduplicated accounts: input = {len(containers)}, output = {len(result)}.")
 
     return result
 
