@@ -195,6 +195,17 @@ class MyEntrypoint:
 
         return rewards
 
+    def transfer_value(self, sender: Account, receiver: Address, amount: int) -> Transaction:
+        controller = self.network_entrypoint.create_transfers_controller()
+        transaction = controller.create_transaction_for_native_token_transfer(
+            sender=sender,
+            nonce=sender.get_nonce_then_increment(),
+            receiver=receiver,
+            native_transfer_amount=amount
+        )
+
+        return transaction
+
     def send_multiple(self, transactions: list[Transaction], chunk_size: int = DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS):
         print(f"Sending {len(transactions)} transactions...")
 
