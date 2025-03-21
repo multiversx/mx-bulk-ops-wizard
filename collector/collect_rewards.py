@@ -11,7 +11,7 @@ from collector.accounts import load_accounts
 from collector.configuration import CONFIGURATIONS
 from collector.entrypoint import MyEntrypoint
 from collector.errors import UsageError
-from collector.resources import ReceivedRewardsOfAccount
+from collector.rewards import ReceivedRewardsOfAccount
 from collector.utils import format_time
 
 

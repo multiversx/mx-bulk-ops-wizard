@@ -21,7 +21,7 @@ from collector.constants import (
     NETWORK_PROVIDERS_RETRY_DELAY_IN_SECONDS, NUM_PARALLEL_GET_NONCE_REQUESTS,
     NUM_PARALLEL_GET_TRANSACTION_REQUESTS)
 from collector.errors import KnownError, TransientError
-from collector.resources import ClaimableRewards, ReceivedRewards, RewardsType
+from collector.rewards import ClaimableRewards, ReceivedRewards, RewardsType
 from collector.utils import split_to_chunks
 
 

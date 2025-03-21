@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from multiversx_sdk import Account, UserSecretKey
+from multiversx_sdk import Account
 
 from collector import ux
 from collector.errors import BadConfigurationError, KnownError
