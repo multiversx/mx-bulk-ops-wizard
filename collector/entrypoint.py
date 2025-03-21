@@ -7,6 +7,7 @@ from multiversx_sdk import (Account, AccountOnNetwork, Address,
                             NetworkEntrypoint, NetworkProviderConfig,
                             ProxyNetworkProvider, Transaction,
                             TransactionOnNetwork)
+from multiversx_sdk.core.interfaces import IAccount
 from rich import print
 
 from collector import ux
@@ -79,30 +80,33 @@ class MyEntrypoint:
         amount = data.get("claimableRewards", 0)
         return int(amount)
 
-    def recall_nonces(self, accounts: list[Account]):
-        def recall_nonce(account: Account):
+    def recall_nonces(self, accounts: list[IAccount]):
+        def recall_nonce(account: Any):
             account.nonce = self.network_entrypoint.recall_account_nonce(account.address)
 
         Pool(NUM_PARALLEL_GET_NONCE_REQUESTS).map(recall_nonce, accounts)
 
-    def claim_rewards(self, delegator: Account, staking_provider: Address, gas_price: int) -> Transaction:
+    def claim_rewards(self, delegator: IAccount, staking_provider: Address, gas_price: int) -> Transaction:
+        delegator_as_any: Any = delegator
         controller = self.network_entrypoint.create_delegation_controller()
+
         transaction = controller.create_transaction_for_claiming_rewards(
             sender=delegator,
-            nonce=delegator.get_nonce_then_increment(),
+            nonce=delegator_as_any.get_nonce_then_increment(),
             delegation_contract=staking_provider,
             gas_price=gas_price
         )
 
         return transaction
 
-    def claim_rewards_legacy(self, delegator: Account, gas_price: int) -> Transaction:
+    def claim_rewards_legacy(self, delegator: IAccount, gas_price: int) -> Transaction:
+        delegator_as_any: Any = delegator
         legacy_delegation_contract = Address.new_from_bech32(self.configuration.legacy_delegation_contract)
 
         controller = self.network_entrypoint.create_smart_contract_controller()
         transaction = controller.create_transaction_for_execute(
             sender=delegator,
-            nonce=delegator.get_nonce_then_increment(),
+            nonce=delegator_as_any.get_nonce_then_increment(),
             contract=legacy_delegation_contract,
             gas_limit=20_000_000,
             function="claimRewards",
@@ -194,11 +198,13 @@ class MyEntrypoint:
 
         return rewards
 
-    def transfer_value(self, sender: Account, receiver: Address, amount: int) -> Transaction:
+    def transfer_value(self, sender: IAccount, receiver: Address, amount: int) -> Transaction:
+        sender_as_any: Any = sender
+
         controller = self.network_entrypoint.create_transfers_controller()
         transaction = controller.create_transaction_for_native_token_transfer(
             sender=sender,
-            nonce=sender.get_nonce_then_increment(),
+            nonce=sender_as_any.get_nonce_then_increment(),
             receiver=receiver,
             native_transfer_amount=amount
         )

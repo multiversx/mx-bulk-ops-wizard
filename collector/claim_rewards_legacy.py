@@ -3,7 +3,6 @@ import traceback
 from argparse import ArgumentParser
 from pathlib import Path
 
-from multiversx_sdk import Transaction
 from rich import print
 
 from collector import errors, ux

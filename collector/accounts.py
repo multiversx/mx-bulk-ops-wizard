@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from multiversx_sdk import Account
+from multiversx_sdk import Account, LedgerAccount
+from multiversx_sdk.core.interfaces import IAccount
 
 from collector import ux
 from collector.errors import BadConfigurationError, KnownError
@@ -13,7 +14,7 @@ from collector.wallets_configuration import (KeystoresWalletEntry,
 
 
 class AccountWrapper:
-    def __init__(self, wallet_name: str, account: Account) -> None:
+    def __init__(self, wallet_name: str, account: IAccount) -> None:
         self.wallet_name = wallet_name
         self.account = account
 
@@ -34,7 +35,7 @@ def load_accounts(wallets_configuration_file: Path) -> list[AccountWrapper]:
     return wrappers
 
 
-def load_accounts_from_wallet_entry(entry: WalletEntry) -> list[Account]:
+def load_accounts_from_wallet_entry(entry: WalletEntry) -> list[IAccount]:
     if isinstance(entry, MnemonicWalletEntry):
         return load_accounts_from_mnemonic(entry)
     if isinstance(entry, KeystoreWalletEntry):
@@ -49,7 +50,7 @@ def load_accounts_from_wallet_entry(entry: WalletEntry) -> list[Account]:
     raise KnownError(f"unknown wallet entry: {entry.kind}")
 
 
-def load_accounts_from_mnemonic(entry: MnemonicWalletEntry) -> list[Account]:
+def load_accounts_from_mnemonic(entry: MnemonicWalletEntry) -> list[IAccount]:
     print("Loading accounts from mnemonic...")
 
     mnemonic = entry.mnemonic
@@ -68,7 +69,7 @@ def load_accounts_from_mnemonic(entry: MnemonicWalletEntry) -> list[Account]:
     if not mnemonic:
         raise BadConfigurationError("mnemonic is empty")
 
-    accounts: list[Account] = []
+    accounts: list[IAccount] = []
 
     for index in address_indices:
         account = Account.new_from_mnemonic(mnemonic, index)
@@ -79,7 +80,7 @@ def load_accounts_from_mnemonic(entry: MnemonicWalletEntry) -> list[Account]:
     return accounts
 
 
-def load_accounts_from_keystore(entry: KeystoreWalletEntry) -> list[Account]:
+def load_accounts_from_keystore(entry: KeystoreWalletEntry) -> list[IAccount]:
     file = entry.file
     password = entry.password
     password_file = entry.password_file
@@ -100,7 +101,7 @@ def load_accounts_from_keystore(entry: KeystoreWalletEntry) -> list[Account]:
         raise BadConfigurationError("password is empty")
 
     file_path = Path(file).expanduser().resolve()
-    accounts: list[Account] = []
+    accounts: list[IAccount] = []
 
     if address_indices:
         for index in address_indices:
@@ -118,7 +119,7 @@ def load_accounts_from_keystore(entry: KeystoreWalletEntry) -> list[Account]:
     return accounts
 
 
-def load_accounts_from_keystores(entry: KeystoresWalletEntry) -> list[Account]:
+def load_accounts_from_keystores(entry: KeystoresWalletEntry) -> list[IAccount]:
     folder = entry.folder
     unique_password = entry.unique_password
     unique_password_file = entry.unique_password_file
@@ -139,7 +140,7 @@ def load_accounts_from_keystores(entry: KeystoresWalletEntry) -> list[Account]:
 
     folder_path = Path(folder).expanduser().resolve()
     keystore_paths = folder_path.glob("*.json")
-    accounts: list[Account] = []
+    accounts: list[IAccount] = []
 
     for path in keystore_paths:
         account = Account.new_from_keystore(path, unique_password)
@@ -150,14 +151,14 @@ def load_accounts_from_keystores(entry: KeystoresWalletEntry) -> list[Account]:
     return accounts
 
 
-def load_accounts_from_pem(entry: PEMWalletEntry) -> list[Account]:
+def load_accounts_from_pem(entry: PEMWalletEntry) -> list[IAccount]:
     file = entry.file
     address_indices = entry.address_indices or [0]
 
     if not file:
         raise BadConfigurationError("'file' must be set")
 
-    accounts: list[Account] = []
+    accounts: list[IAccount] = []
 
     for index in address_indices:
         account = Account.new_from_pem(Path(file), index)
@@ -168,9 +169,18 @@ def load_accounts_from_pem(entry: PEMWalletEntry) -> list[Account]:
     return accounts
 
 
-def load_accounts_from_ledger(entry: LedgerWalletEntry) -> list[Account]:
-    ux.show_warning("load_accounts_from_ledger() not yet implemented.")
-    return []
+def load_accounts_from_ledger(entry: LedgerWalletEntry) -> list[IAccount]:
+    address_indices = entry.address_indices or [0]
+
+    accounts: list[IAccount] = []
+
+    for index in address_indices:
+        account = LedgerAccount(index)
+        accounts.append(account)
+
+        print(f"\t{account.address}")
+
+    return accounts
 
 
 def deduplicate_accounts(wrappers: list[AccountWrapper]) -> list[AccountWrapper]:

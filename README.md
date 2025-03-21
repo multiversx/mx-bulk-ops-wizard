@@ -50,6 +50,11 @@ Here's what a wallet configuration file would look like:
         "uniquePasswordFile": "~/mx-sdk-testwallets/users/password.txt"
     },
     {
+        "name": "whale",
+        "kind": "pem",
+        "file": "~/whale.pem"
+    },
+    {
         "kind": "ledger",
         "addressIndices": [0, 1, 2, 3]
     }
