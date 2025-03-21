@@ -27,6 +27,8 @@ class WalletsConfiguration:
                 entries.append(KeystoreWalletEntry.new_from_dictionary(entry_raw))
             elif kind == WalletKind.Keystores:
                 entries.append(KeystoresWalletEntry.new_from_dictionary(entry_raw))
+            elif kind == WalletKind.PEM:
+                entries.append(PEMWalletEntry.new_from_dictionary(entry_raw))
             elif kind == WalletKind.Ledger:
                 entries.append(LedgerWalletEntry.new_from_dictionary(entry_raw))
             else:
@@ -45,6 +47,7 @@ class WalletKind(str, Enum):
     Mnemonic = "mnemonic"
     Keystore = "keystore"
     Keystores = "keystores"
+    PEM = "pem"
     Ledger = "ledger"
 
 
@@ -136,6 +139,31 @@ class KeystoresWalletEntry(WalletEntry):
             folder=folder,
             unique_password=unique_password,
             unique_password_file=unique_password_file
+        )
+
+
+class PEMWalletEntry(WalletEntry):
+    def __init__(self,
+                 name: str,
+                 file: str,
+                 address_indices: list[int]) -> None:
+        super().__init__(WalletKind.PEM, name)
+
+        self.file = file
+        self.address_indices = address_indices
+
+    @classmethod
+    def new_from_dictionary(cls, data: dict[str, Any]):
+        assert data["kind"] == WalletKind.PEM
+
+        name = data.get("name") or ""
+        file = data.get("file") or ""
+        address_indices = data.get("addressIndices") or []
+
+        return cls(
+            name=name,
+            file=file,
+            address_indices=address_indices
         )
 
 

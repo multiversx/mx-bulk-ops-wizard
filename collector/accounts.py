@@ -7,7 +7,8 @@ from collector.errors import BadConfigurationError, KnownError
 from collector.wallets_configuration import (KeystoresWalletEntry,
                                              KeystoreWalletEntry,
                                              LedgerWalletEntry,
-                                             MnemonicWalletEntry, WalletEntry,
+                                             MnemonicWalletEntry,
+                                             PEMWalletEntry, WalletEntry,
                                              WalletsConfiguration)
 
 
@@ -40,6 +41,8 @@ def load_accounts_from_wallet_entry(entry: WalletEntry) -> list[Account]:
         return load_accounts_from_keystore(entry)
     if isinstance(entry, KeystoresWalletEntry):
         return load_accounts_from_keystores(entry)
+    if isinstance(entry, PEMWalletEntry):
+        return load_accounts_from_pem(entry)
     if isinstance(entry, LedgerWalletEntry):
         return load_accounts_from_ledger(entry)
 
@@ -140,6 +143,24 @@ def load_accounts_from_keystores(entry: KeystoresWalletEntry) -> list[Account]:
 
     for path in keystore_paths:
         account = Account.new_from_keystore(path, unique_password)
+        accounts.append(account)
+
+        print(f"\t{account.address}")
+
+    return accounts
+
+
+def load_accounts_from_pem(entry: PEMWalletEntry) -> list[Account]:
+    file = entry.file
+    address_indices = entry.address_indices or [0]
+
+    if not file:
+        raise BadConfigurationError("'file' must be set")
+
+    accounts: list[Account] = []
+
+    for index in address_indices:
+        account = Account.new_from_pem(Path(file), index)
         accounts.append(account)
 
         print(f"\t{account.address}")
