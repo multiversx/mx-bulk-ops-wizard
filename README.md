@@ -80,3 +80,9 @@ PYTHONPATH=. python3 ./collector/claim_rewards.py --network=devnet --wallets=$WA
 ```
 PYTHONPATH=. python3 ./collector/claim_rewards_legacy.py --network=devnet --wallets=$WALLETS_CONFIG --threshold=1
 ```
+
+## Collect previously received rewards
+
+```
+PYTHONPATH=. python3 ./collector/collect_rewards.py --network=devnet --wallets=$WALLETS_CONFIG --threshold=1 --after-epoch=3000 --outfile=rewards.json
+```

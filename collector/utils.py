@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Any
 
 from collector.constants import ONE_QUINTILLION
@@ -9,4 +10,9 @@ def split_to_chunks(items: list[Any], chunk_size: int):
 
 
 def format_amount(amount: int) -> str:
-    return f"{amount / ONE_QUINTILLION:.2f}"
+    return f"{amount / ONE_QUINTILLION:.18f}"
+
+
+def format_time(timestamp: int) -> str:
+    time = datetime.fromtimestamp(timestamp, timezone.utc)
+    return time.strftime("%Y-%m-%d %H:%M:%S")

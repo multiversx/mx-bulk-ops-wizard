@@ -1,22 +1,26 @@
 import time
 from multiprocessing.dummy import Pool
-from typing import Callable
+from typing import Any, Callable
 
 from multiversx_sdk import (Account, AccountOnNetwork, Address,
-                            ApiNetworkProvider, AwaitingOptions,
+                            ApiNetworkProvider, AwaitingOptions, GenericError,
                             NetworkEntrypoint, NetworkProviderConfig,
                             ProxyNetworkProvider, Transaction,
                             TransactionComputer, TransactionOnNetwork)
+from rich import print
 
 from collector import ux
 from collector.configuration import Configuration
 from collector.constants import (
     ACCOUNT_AWAITING_PATIENCE_IN_MILLISECONDS,
     ACCOUNT_AWAITING_POLLING_TIMEOUT_IN_MILLISECONDS,
-    DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS, NETWORK_PROVIDER_TIMEOUT_SECONDS,
-    NUM_PARALLEL_GET_NONCE_REQUESTS, NUM_PARALLEL_GET_TRANSACTION_REQUESTS)
-from collector.delegation import ClaimableRewards
-from collector.errors import KnownError
+    DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS,
+    MAX_NUM_HISTORICAL_TRANSACTIONS_TO_FETCH, METACHAIN_ID,
+    NETWORK_PROVIDER_NUM_RETRIES, NETWORK_PROVIDER_TIMEOUT_SECONDS,
+    NETWORK_PROVIDERS_RETRY_DELAY_IN_SECONDS, NUM_PARALLEL_GET_NONCE_REQUESTS,
+    NUM_PARALLEL_GET_TRANSACTION_REQUESTS)
+from collector.errors import KnownError, TransientError
+from collector.resources import ClaimableRewards, ReceivedRewards
 from collector.utils import split_to_chunks
 
 
@@ -51,6 +55,12 @@ class MyEntrypoint:
         )
 
         self.transaction_computer = TransactionComputer()
+
+    def get_start_of_epoch_timestamp(self, epoch: int) -> int:
+        url = f"network/epoch-start/{METACHAIN_ID}/by-epoch/{epoch}"
+        data = self.proxy_network_provider.do_get_generic(url)
+        timestamp = data.get("epochStart", {}).get("timestamp", 0)
+        return timestamp
 
     def get_claimable_rewards(self, delegator: Address) -> list[ClaimableRewards]:
         data_records = self.api_network_provider.do_get_generic(url=f"accounts/{delegator.to_bech32()}/delegation")
@@ -101,6 +111,41 @@ class MyEntrypoint:
 
         return transaction
 
+    def get_claimed_rewards(self, delegator: Address, after_timestamp: int) -> list[ReceivedRewards]:
+        url = f"accounts/{delegator.to_bech32()}/transactions"
+        data = self._api_do_get(url, {
+            "function": "claimRewards",
+            "receiverShard": METACHAIN_ID,
+            "after": after_timestamp,
+            "size": MAX_NUM_HISTORICAL_TRANSACTIONS_TO_FETCH
+        })
+
+        rewards: list[ReceivedRewards] = []
+        return rewards
+
+    def get_claimed_rewards_legacy(self, delegator: Address, after_timestamp: int) -> list[ReceivedRewards]:
+        url = f"accounts/{delegator.to_bech32()}/transactions"
+        data = self._api_do_get(url, {
+            "function": "claimRewards",
+            "receiver": self.configuration.legacy_delegation_contract,
+            "after": after_timestamp,
+            "size": MAX_NUM_HISTORICAL_TRANSACTIONS_TO_FETCH
+        })
+
+        rewards: list[ReceivedRewards] = []
+        return rewards
+
+    def get_received_staking_rewards(self, node_owner: Address, after_timestamp: int) -> list[ReceivedRewards]:
+        url = f"accounts/{node_owner.to_bech32()}/transactions"
+        data = self._api_do_get(url, {
+            "senderShard": METACHAIN_ID,
+            "after": after_timestamp,
+            "size": MAX_NUM_HISTORICAL_TRANSACTIONS_TO_FETCH
+        })
+
+        rewards: list[ReceivedRewards] = []
+        return rewards
+
     def send_multiple(self, transactions: list[Transaction], chunk_size: int = DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS):
         print(f"Sending {len(transactions)} transactions...")
 
@@ -149,3 +194,20 @@ class MyEntrypoint:
         ux.show_message(f"Transactions sent. Waiting for their completion...")
         transactions_on_network = Pool(NUM_PARALLEL_GET_TRANSACTION_REQUESTS).map(await_completed_one, transactions)
         return transactions_on_network
+
+    def _api_do_get(self, url: str, url_parameters: dict[str, Any]):
+        latest_error = None
+
+        for attempt in range(NETWORK_PROVIDER_NUM_RETRIES):
+            try:
+                return self.api_network_provider.do_get_generic(url, url_parameters)
+            except GenericError as error:
+                latest_error = error
+
+                print(f"Attempt #{attempt}, [red]failed to get {error.url}[/red].")
+
+                is_last_attempt = attempt == NETWORK_PROVIDER_NUM_RETRIES - 1
+                if not is_last_attempt:
+                    time.sleep(NETWORK_PROVIDERS_RETRY_DELAY_IN_SECONDS)
+
+        raise TransientError(f"cannot get from API", latest_error)

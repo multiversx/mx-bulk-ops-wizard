@@ -1,8 +1,8 @@
-from typing import Any, Union
+from typing import Any, Optional
 
 
 class KnownError(Exception):
-    def __init__(self, message: str, inner: Union[Any, None] = None):
+    def __init__(self, message: str, inner: Optional[Any] = None):
         super().__init__(message)
         self.inner = inner
 
@@ -17,3 +17,13 @@ class KnownError(Exception):
 class BadConfigurationError(KnownError):
     def __init__(self, message: str):
         super().__init__(f"bad configuration: {message}")
+
+
+class UsageError(KnownError):
+    def __init__(self, message: str):
+        super().__init__(f"bad usage: {message}")
+
+
+class TransientError(KnownError):
+    def __init__(self, message: str, inner: Optional[Any] = None):
+        super().__init__(f"transient error: {message}", inner)

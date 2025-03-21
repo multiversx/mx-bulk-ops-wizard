@@ -45,10 +45,11 @@ def _do_main(cli_args: list[str]):
 
     for container in containers:
         account = container.account
+        address = account.address
 
-        print(account.address.to_bech32(), f"([yellow]{container.wallet_name}[/yellow])")
+        print(address.to_bech32(), f"([yellow]{container.wallet_name}[/yellow])")
 
-        claimable_rewards = entrypoint.get_claimable_rewards_legacy(account.address)
+        claimable_rewards = entrypoint.get_claimable_rewards_legacy(address)
 
         if claimable_rewards < threshold:
             continue
