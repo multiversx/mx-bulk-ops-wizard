@@ -56,7 +56,14 @@ Here's what a wallet configuration file would look like:
 ]
 ```
 
-## Setup environment
+## Setup environment variables
+
+Custom URLs for API & Proxy, if default ones are not sufficient (for example, due to rate limiting):
+
+```
+export MAINNET_PROXY_URL="..."
+export MAINNET_API_URL="..."
+```
 
 ```
 WALLETS_CONFIG="./collector/testdata/wallets.config.json"
