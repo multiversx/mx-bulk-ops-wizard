@@ -44,6 +44,8 @@ def _do_main(cli_args: list[str]):
     choice = args.choice
     gas_price = args.gas_price
 
+    ux.confirm_continuation(f"You chose to vote on proposal =y [green]{proposal}[/green], with choice = [green]{choice}[/green]. Continue?")
+
     ux.show_message("Loading proofs...")
 
     json_content = proofs_path.read_text()
@@ -57,8 +59,7 @@ def _do_main(cli_args: list[str]):
     entrypoint.recall_nonces([item.account for item in accounts_wrappers])
     transactions_wrappers: list[TransactionWrapper] = []
 
-    ux.show_message("Voting on governance...")
-    ux.confirm_continuation(f"You chose to vote [green]{choice}[/green] on proposal [green]{proposal}[/green]. All good?")
+    ux.show_message("Crafting transactions...")
 
     for account_wrapper in accounts_wrappers:
         account = account_wrapper.account
