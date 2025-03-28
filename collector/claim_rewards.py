@@ -29,7 +29,7 @@ def _do_main(cli_args: list[str]):
     parser.add_argument("--network", choices=CONFIGURATIONS.keys(), required=True, help="network name")
     parser.add_argument("--wallets", required=True, help="path of the wallets configuration file")
     parser.add_argument("--threshold", type=int, default=0, help="claim rewards larger than this amount")
-    parser.add_argument("--gas-price", type=int, default=DEFAULT_GAS_PRICE, help="claim rewards larger than this amount")
+    parser.add_argument("--gas-price", type=int, default=DEFAULT_GAS_PRICE, help="gas price")
     args = parser.parse_args(cli_args)
 
     network = args.network

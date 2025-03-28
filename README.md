@@ -111,3 +111,11 @@ PYTHONPATH=. python3 ./collector/prepare_transfers.py --threshold=1 --infile=rew
 ```
 PYTHONPATH=. python3 ./collector/do_transfers.py --network=devnet --wallets=$WALLETS_CONFIG --infile=transfers.json --receiver=${RECEIVER}
 ```
+
+## Vote on governance
+
+```
+export WALLETS_CONFIG="./collector/testdata/wallets.config.json"
+export PROOFS="./proofs.json"
+PYTHONPATH=. python3 ./collector/vote_on_governance.py --network=devnet --wallets=$WALLETS_CONFIG --proofs=${PROOFS}
+```

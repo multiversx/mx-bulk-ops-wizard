@@ -7,6 +7,7 @@ from multiversx_sdk import (Account, AccountOnNetwork, Address,
                             NetworkEntrypoint, NetworkProviderConfig,
                             ProxyNetworkProvider, Transaction,
                             TransactionOnNetwork)
+from multiversx_sdk.abi import BigUIntValue, BytesValue, U64Value
 from multiversx_sdk.core.interfaces import IAccount
 from rich import print
 
@@ -207,6 +208,28 @@ class MyEntrypoint:
             nonce=sender_as_any.get_nonce_then_increment(),
             receiver=receiver,
             native_transfer_amount=amount
+        )
+
+        return transaction
+
+    def vote_on_governance(self, sender: IAccount, proposal: int, choice: int, power: int, proof: bytes, gas_price: int) -> Transaction:
+        sender_as_any: Any = sender
+        governance_contract = Address.new_from_bech32(self.configuration.governance_contract)
+
+        controller = self.network_entrypoint.create_smart_contract_controller()
+        transaction = controller.create_transaction_for_execute(
+            sender=sender,
+            nonce=sender_as_any.get_nonce_then_increment(),
+            contract=governance_contract,
+            gas_limit=50_000_000,
+            function="vote",
+            arguments=[
+                U64Value(proposal),
+                U64Value(choice),
+                BigUIntValue(power),
+                BytesValue(proof)
+            ],
+            gas_price=gas_price
         )
 
         return transaction

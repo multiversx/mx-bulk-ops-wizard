@@ -1,3 +1,4 @@
+import json
 import sys
 import traceback
 from argparse import ArgumentParser
@@ -10,6 +11,7 @@ from collector.accounts import load_accounts
 from collector.configuration import CONFIGURATIONS
 from collector.constants import DEFAULT_GAS_PRICE
 from collector.entrypoint import MyEntrypoint
+from collector.governance import GovernanceRecord
 from collector.transactions import TransactionWrapper
 from collector.utils import format_amount
 
@@ -27,7 +29,9 @@ def _do_main(cli_args: list[str]):
     parser = ArgumentParser()
     parser.add_argument("--network", choices=CONFIGURATIONS.keys(), required=True, help="network name")
     parser.add_argument("--wallets", required=True, help="path of the wallets configuration file")
-    parser.add_argument("--threshold", type=int, default=0, help="claim rewards larger than this amount")
+    parser.add_argument("--proofs", required=True, help="path of the proofs file")
+    parser.add_argument("--proposal", type=int, default=1, help="vote")
+    parser.add_argument("--choice", type=int, default=0, help="vote")
     parser.add_argument("--gas-price", type=int, default=DEFAULT_GAS_PRICE, help="gas price")
     args = parser.parse_args(cli_args)
 
@@ -35,31 +39,53 @@ def _do_main(cli_args: list[str]):
     configuration = CONFIGURATIONS[network]
     entrypoint = MyEntrypoint(configuration)
     accounts_wrappers = load_accounts(Path(args.wallets))
-    threshold = args.threshold
+    proofs_path = Path(args.proofs).expanduser().resolve()
+    proposal = args.proposal
+    choice = args.choice
     gas_price = args.gas_price
+
+    ux.show_message("Loading proofs...")
+
+    json_content = proofs_path.read_text()
+    data = json.loads(json_content)
+    records = [GovernanceRecord.new_from_dictionary(item) for item in data]
+
+    records_by_adresses: dict[str, GovernanceRecord] = {
+        item.address.to_bech32(): item for item in records
+    }
 
     entrypoint.recall_nonces([item.account for item in accounts_wrappers])
     transactions_wrappers: list[TransactionWrapper] = []
 
-    ux.show_message("Looking for rewards to claim...")
+    ux.show_message("Voting on governance...")
+    ux.confirm_continuation(f"You chose to vote [green]{choice}[/green] on proposal [green]{proposal}[/green]. All good?")
 
     for account_wrapper in accounts_wrappers:
         account = account_wrapper.account
         address = account.address
         label = account_wrapper.wallet_name
 
-        print(address.to_bech32(), f"([yellow]{label}[/yellow])")
+        print(address.to_bech32(), f"([yellow]{account_wrapper.wallet_name}[/yellow])")
 
-        claimable_rewards = entrypoint.get_claimable_rewards_legacy(address)
-
-        if claimable_rewards < threshold:
+        if address.bech32() not in records_by_adresses:
+            ux.show_warning("Not eligible for voting.")
             continue
 
-        print(f"\tClaim {format_amount(claimable_rewards)} EGLD from legacy delegation")
-        transaction = entrypoint.claim_rewards_legacy(account, gas_price)
+        record = records_by_adresses[address.to_bech32()]
+        print(f"\tVote with power {format_amount(record.power)}")
+
+        transaction = entrypoint.vote_on_governance(
+            sender=account,
+            proposal=proposal,
+            choice=choice,
+            power=record.power,
+            proof=record.proof,
+            gas_price=gas_price
+        )
+
         transactions_wrappers.append(TransactionWrapper(transaction, label))
 
-    ux.confirm_continuation(f"Ready to claim rewards, by sending [green]{len(transactions_wrappers)}[/green] transactions?")
+    ux.confirm_continuation(f"Ready to vote, by sending [green]{len(transactions_wrappers)}[/green] transactions?")
     entrypoint.send_multiple(transactions_wrappers)
 
 
