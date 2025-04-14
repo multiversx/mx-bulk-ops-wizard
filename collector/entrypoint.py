@@ -2,9 +2,9 @@ import time
 from multiprocessing.dummy import Pool
 from typing import Any, Callable
 
-from multiversx_sdk import (Account, AccountOnNetwork, Address,
-                            ApiNetworkProvider, AwaitingOptions, GenericError,
-                            NetworkEntrypoint, NetworkProviderConfig,
+from multiversx_sdk import (AccountOnNetwork, Address, ApiNetworkProvider,
+                            AwaitingOptions, NetworkEntrypoint,
+                            NetworkProviderConfig, NetworkProviderError,
                             ProxyNetworkProvider, Transaction,
                             TransactionOnNetwork)
 from multiversx_sdk.abi import BigUIntValue, BytesValue, U64Value
@@ -303,7 +303,7 @@ class MyEntrypoint:
         for attempt in range(NETWORK_PROVIDER_NUM_RETRIES):
             try:
                 return self.api_network_provider.do_get_generic(url, url_parameters)
-            except GenericError as error:
+            except NetworkProviderError as error:
                 latest_error = error
 
                 print(f"Attempt #{attempt}, [red]failed to get {error.url}[/red]")

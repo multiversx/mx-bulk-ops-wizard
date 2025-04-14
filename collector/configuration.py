@@ -25,6 +25,7 @@ class Configuration:
     explorer_url: str
     legacy_delegation_contract: str
     governance_contract: str
+    cosigner_url: str
 
 
 CONFIGURATIONS = {
@@ -34,7 +35,8 @@ CONFIGURATIONS = {
         api_url=ENV_MAINNET_API_URL or DEFAULT_MAINNET_API_URL,
         explorer_url="https://explorer.multiversx.com",
         legacy_delegation_contract="erd1qqqqqqqqqqqqqpgqxwakt2g7u9atsnr03gqcgmhcv38pt7mkd94q6shuwt",
-        governance_contract="erd1qqqqqqqqqqqqqpgqfn2mu8l0dte34eqh6qtgmpjpxpkhunccrl4sy2sp07"
+        governance_contract="erd1qqqqqqqqqqqqqpgqfn2mu8l0dte34eqh6qtgmpjpxpkhunccrl4sy2sp07",
+        cosigner_url="https://tools.multiversx.com"
     ),
     "devnet": Configuration(
         chain_id="D",
@@ -42,7 +44,8 @@ CONFIGURATIONS = {
         api_url=ENV_DEVNET_API_URL or DEFAULT_DEVNET_API_URL,
         explorer_url="https://devnet-explorer.multiversx.com",
         legacy_delegation_contract="erd1qqqqqqqqqqqqqpgq97wezxw6l7lgg7k9rxvycrz66vn92ksh2tssxwf7ep",
-        governance_contract="erd1qqqqqqqqqqqqqpgqahutnw3r4s95gxz4keecvlyyl3wlsu2mdthq06swcp"
+        governance_contract="erd1qqqqqqqqqqqqqpgqahutnw3r4s95gxz4keecvlyyl3wlsu2mdthq06swcp",
+        cosigner_url="https://devnet-tools.multiversx.com"
     ),
     "testnet": Configuration(
         chain_id="T",
@@ -50,6 +53,7 @@ CONFIGURATIONS = {
         api_url=ENV_TESTNET_API_URL or DEFAULT_TESTNET_API_URL,
         explorer_url="https://testnet-explorer.multiversx.com",
         legacy_delegation_contract="erd1qqqqqqqqqqqqqpgq97wezxw6l7lgg7k9rxvycrz66vn92ksh2tssxwf7ep",
-        governance_contract="erd1qqqqqqqqqqqqqpgqahutnw3r4s95gxz4keecvlyyl3wlsu2mdthq06swcp"
+        governance_contract="erd1qqqqqqqqqqqqqpgqahutnw3r4s95gxz4keecvlyyl3wlsu2mdthq06swcp",
+        cosigner_url="https://testnet-tcs-api.multiversx.com"
     ),
 }
