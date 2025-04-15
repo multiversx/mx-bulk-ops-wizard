@@ -15,6 +15,9 @@ from collector.wallets_configuration import (KeystoresWalletEntry,
 
 
 class IMyAccount(IAccount, Protocol):
+    def get_nonce_then_increment(self) -> int:
+        ...
+
     def sign_message(self, message: Message) -> bytes:
         ...
 
