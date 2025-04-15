@@ -3,15 +3,16 @@ from multiprocessing.dummy import Pool
 from typing import Any, Callable
 
 from multiversx_sdk import (AccountOnNetwork, Address, ApiNetworkProvider,
-                            AwaitingOptions, NetworkEntrypoint,
+                            AwaitingOptions, Message, NativeAuthClient,
+                            NativeAuthClientConfig, NetworkEntrypoint,
                             NetworkProviderConfig, NetworkProviderError,
                             ProxyNetworkProvider, Transaction,
                             TransactionOnNetwork)
 from multiversx_sdk.abi import BigUIntValue, BytesValue, U64Value
-from multiversx_sdk.core.interfaces import IAccount
 from rich import print
 
 from collector import ux
+from collector.accounts import IMyAccount
 from collector.configuration import Configuration
 from collector.constants import (
     ACCOUNT_AWAITING_PATIENCE_IN_MILLISECONDS,
@@ -81,13 +82,13 @@ class MyEntrypoint:
         amount = data.get("claimableRewards", 0)
         return int(amount)
 
-    def recall_nonces(self, accounts: list[IAccount]):
+    def recall_nonces(self, accounts: list[IMyAccount]):
         def recall_nonce(account: Any):
             account.nonce = self.network_entrypoint.recall_account_nonce(account.address)
 
         Pool(NUM_PARALLEL_GET_NONCE_REQUESTS).map(recall_nonce, accounts)
 
-    def claim_rewards(self, delegator: IAccount, staking_provider: Address, gas_price: int) -> Transaction:
+    def claim_rewards(self, delegator: IMyAccount, staking_provider: Address, gas_price: int) -> Transaction:
         delegator_as_any: Any = delegator
         controller = self.network_entrypoint.create_delegation_controller()
 
@@ -100,7 +101,7 @@ class MyEntrypoint:
 
         return transaction
 
-    def claim_rewards_legacy(self, delegator: IAccount, gas_price: int) -> Transaction:
+    def claim_rewards_legacy(self, delegator: IMyAccount, gas_price: int) -> Transaction:
         delegator_as_any: Any = delegator
         legacy_delegation_contract = Address.new_from_bech32(self.configuration.legacy_delegation_contract)
 
@@ -199,7 +200,7 @@ class MyEntrypoint:
 
         return rewards
 
-    def transfer_value(self, sender: IAccount, receiver: Address, amount: int) -> Transaction:
+    def transfer_value(self, sender: IMyAccount, receiver: Address, amount: int) -> Transaction:
         sender_as_any: Any = sender
 
         controller = self.network_entrypoint.create_transfers_controller()
@@ -212,7 +213,7 @@ class MyEntrypoint:
 
         return transaction
 
-    def vote_on_governance(self, sender: IAccount, proposal: int, choice: int, power: int, proof: bytes, gas_price: int) -> Transaction:
+    def vote_on_governance(self, sender: IMyAccount, proposal: int, choice: int, power: int, proof: bytes, gas_price: int) -> Transaction:
         sender_as_any: Any = sender
         governance_contract = Address.new_from_bech32(self.configuration.governance_contract)
 
