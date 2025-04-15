@@ -49,6 +49,13 @@ class MyEntrypoint:
             config=NetworkProviderConfig(requests_options={"timeout": NETWORK_PROVIDER_TIMEOUT_SECONDS})
         )
 
+        native_auth_config = NativeAuthClientConfig(
+            origin=self.configuration.api_url,
+            api_url=self.configuration.api_url,
+        )
+
+        self.native_auth_client = NativeAuthClient(native_auth_config)
+
         self.account_awaiting_options = AwaitingOptions(
             polling_interval_in_milliseconds=ACCOUNT_AWAITING_POLLING_TIMEOUT_IN_MILLISECONDS,
             patience_in_milliseconds=ACCOUNT_AWAITING_PATIENCE_IN_MILLISECONDS
@@ -234,6 +241,16 @@ class MyEntrypoint:
         )
 
         return transaction
+
+    def get_native_auth_init_token(self) -> str:
+        init_token = self.native_auth_client.initialize()
+        return init_token
+
+    def get_native_auth_access_tokens(self, init_token: str, account: IMyAccount) -> str:
+        token_for_signing = self.native_auth_client.get_token_for_signing(account.address, init_token)
+        signature = account.sign_message(Message(token_for_signing))
+        access_token = self.native_auth_client.get_token(address=account.address, token=init_token, signature=signature.hex())
+        return access_token
 
     def send_multiple(self, wrappers: list[TransactionWrapper], chunk_size: int = DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS):
         print(f"Sending {len(wrappers)} transactions...")
