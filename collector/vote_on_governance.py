@@ -45,7 +45,7 @@ def _do_main(cli_args: list[str]):
     proposal = args.proposal
     choice = args.choice
     gas_price = args.gas_price
-    auth_app = AuthApp.new_from_registration_file(Path(args.auth)) if args.path else AuthApp([])
+    auth_app = AuthApp.new_from_registration_file(Path(args.auth)) if args.auth else AuthApp([])
 
     ux.confirm_continuation(f"You chose to vote on proposal =y [green]{proposal}[/green], with choice = [green]{choice}[/green]. Continue?")
 

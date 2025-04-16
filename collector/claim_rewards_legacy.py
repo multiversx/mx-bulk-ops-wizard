@@ -39,7 +39,7 @@ def _do_main(cli_args: list[str]):
     accounts_wrappers = load_accounts(Path(args.wallets))
     threshold = args.threshold
     gas_price = args.gas_price
-    auth_app = AuthApp.new_from_registration_file(Path(args.auth)) if args.path else AuthApp([])
+    auth_app = AuthApp.new_from_registration_file(Path(args.auth)) if args.auth else AuthApp([])
 
     entrypoint.recall_nonces([item.account for item in accounts_wrappers])
     transactions_wrappers: list[TransactionWrapper] = []

@@ -43,7 +43,7 @@ def _do_main(cli_args: list[str]):
     infile = args.infile
     infile_path = Path(infile).expanduser().resolve()
     receiver = Address.new_from_bech32(args.receiver)
-    auth_app = AuthApp.new_from_registration_file(Path(args.auth)) if args.path else AuthApp([])
+    auth_app = AuthApp.new_from_registration_file(Path(args.auth)) if args.auth else AuthApp([])
 
     accounts_wrappers_by_addresses: dict[str, AccountWrapper] = {
         item.account.address.to_bech32(): item for item in accounts_wrappers
