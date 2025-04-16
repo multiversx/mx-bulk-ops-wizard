@@ -10,6 +10,48 @@ from rich import print
 from collector import errors, ux
 
 
+class GuardianData:
+    def __init__(self,
+                 is_guarded: bool,
+                 active_epoch: int,
+                 active_guardian: str,
+                 active_service: str,
+                 pending_epoch: int,
+                 pending_guardian: str,
+                 pending_service: str) -> None:
+        self.is_guarded = is_guarded
+        self.active_epoch = active_epoch
+        self.active_guardian = active_guardian
+        self.active_service = active_service
+        self.pending_epoch = pending_epoch
+        self.pending_guardian = pending_guardian
+        self.pending_service = pending_service
+
+    @classmethod
+    def new_from_response_payload(cls, data: dict[str, Any]):
+        is_guarded = data.get("guarded", False)
+
+        active_data = data.get("activeGuardian", {})
+        active_epoch = active_data.get("activationEpoch", 0)
+        active_guardian = active_data.get("address", "")
+        active_service = active_data.get("serviceUID", "")
+
+        pending_data = data.get("pendingGuardian", {})
+        pending_epoch = pending_data.get("activationEpoch", 0)
+        pending_guardian = pending_data.get("address", "")
+        pending_service = pending_data.get("serviceUID", "")
+
+        return cls(
+            is_guarded=is_guarded,
+            active_epoch=active_epoch,
+            active_guardian=active_guardian,
+            active_service=active_service,
+            pending_epoch=pending_epoch,
+            pending_guardian=pending_guardian,
+            pending_service=pending_service,
+        )
+
+
 class CosignerRegistrationEntry:
     def __init__(self,
                  address: str,

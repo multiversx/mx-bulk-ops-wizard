@@ -42,9 +42,15 @@ def _do_main(cli_args: list[str]):
         address = account.address
         label = account_wrapper.wallet_name
 
-        account_on_network = entrypoint.proxy_network_provider.get_account(address)
-        if account_on_network.is_guarded:
-            raise errors.UsageError(f"account {label} ({address}) is already guarded; should be excluded beforehand")
+        guardian_data = entrypoint.get_guardian_data(address)
+        if guardian_data.is_guarded:
+            print(f"Account [yellow]{label}[/yellow] ({address}) is already guarded:")
+            print(f"\tGuardian: {guardian_data.active_guardian}")
+            ux.confirm_continuation("Continue?")
+        if guardian_data.pending_guardian:
+            print(f"Account [yellow]{label}[/yellow] ({address}) has a pending guardian:")
+            print(f"\tGuardian: {guardian_data.pending_guardian} (activation epoch {guardian_data.pending_epoch})")
+            ux.confirm_continuation("Continue?")
 
     ux.show_message("Registering on cosigner service...")
 

@@ -26,7 +26,7 @@ from collector.constants import (
     NUM_PARALLEL_GET_TRANSACTION_REQUESTS)
 from collector.errors import KnownError, TransientError
 from collector.guardians import (AuthApp, CosignerClient,
-                                 CosignerRegistrationEntry)
+                                 CosignerRegistrationEntry, GuardianData)
 from collector.rewards import ClaimableRewards, ReceivedRewards, RewardsType
 from collector.timecache import TimeCache
 from collector.transactions import TransactionWrapper
@@ -242,6 +242,12 @@ class MyEntrypoint:
         )
 
         return transaction
+
+    def get_guardian_data(self, address: Address):
+        response = self.proxy_network_provider.do_get_generic(f"address/{address.to_bech32()}/guardian-data")
+        response_payload = response.get("guardianData", {})
+        guardian_data = GuardianData.new_from_response_payload(response_payload)
+        return guardian_data
 
     def register_cosigner(self, auth_app: AuthApp, account_wrapper: AccountWrapper) -> CosignerRegistrationEntry:
         access_token = self.get_native_auth_access_tokens(account_wrapper.account)
