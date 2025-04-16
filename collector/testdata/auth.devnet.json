@@ -1,0 +1,62 @@
+[
+    {
+        "address": "erd18tudnj2z8vjh0339yu3vrkgzz2jpz8mjq0uhgnmklnap6z33qqeszq2yn4",
+        "walletName": "eve and frank",
+        "guardian": "erd1jchgjc2eq7mg63te76rw4f7un65sfsxqykds98pgxnejxrv230cqyptkkn",
+        "authMetadata": {
+            "scheme": "otpauth",
+            "host": "totp",
+            "issuer": "MultiversX",
+            "account": "eve and frank",
+            "algorithm": "SHA1",
+            "digits": 6,
+            "period": 30,
+            "secret": "3RK2OHHBJ7AEQK6YOXEDCAORRZDK4E5T"
+        }
+    },
+    {
+        "address": "erd1kdl46yctawygtwg2k462307dmz2v55c605737dp3zkxh04sct7asqylhyv",
+        "walletName": "eve and frank",
+        "guardian": "erd1vfetqhack5lw8ngdw63530chjvy82shkyc05342w4svm6v4y8uqqetxvm0",
+        "authMetadata": {
+            "scheme": "otpauth",
+            "host": "totp",
+            "issuer": "MultiversX",
+            "account": "eve and frank",
+            "algorithm": "SHA1",
+            "digits": 6,
+            "period": 30,
+            "secret": "SGFCLYBIFYQDW3KXT4LMJOCM3D7KQYDO"
+        }
+    },
+    {
+        "address": "erd1k2s324ww2g0yj38qn2ch2jwctdy8mnfxep94q9arncc6xecg3xaq6mjse8",
+        "walletName": "carol",
+        "guardian": "erd152mfnun43qafx2tgg2qhztkrnmccg0tsqkc9w2xsuprlulyvarwqzgjwmc",
+        "authMetadata": {
+            "scheme": "otpauth",
+            "host": "totp",
+            "issuer": "MultiversX",
+            "account": "carol",
+            "algorithm": "SHA1",
+            "digits": 6,
+            "period": 30,
+            "secret": "HKFSK44UBZERTR4K47N6Y6PDPACSBSA5"
+        }
+    },
+    {
+        "address": "erd1dc3yzxxeq69wvf583gw0h67td226gu2ahpk3k50qdgzzym8npltq7ndgha",
+        "walletName": "heidi",
+        "guardian": "erd1dg2vgfk9u6an2j8p5yr3grxsyq64u65lq7lut28ec4urdw2x3luqhah4ex",
+        "authMetadata": {
+            "scheme": "otpauth",
+            "host": "totp",
+            "issuer": "MultiversX",
+            "account": "heidi",
+            "algorithm": "SHA1",
+            "digits": 6,
+            "period": 30,
+            "secret": "ND4MWTIEJQXVG75MHHELCPYL63NHSAMP"
+        }
+    }
+]

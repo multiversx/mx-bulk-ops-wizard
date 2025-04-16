@@ -125,25 +125,25 @@ For the examples below, we'll consider:
 
 ```
 export WALLETS_CONFIG="./collector/testdata/wallets#foo.config.json"
-export AUTH_REGISTRATION="./collector/testdata/auth.json"
+export AUTH_REGISTRATION="./collector/testdata/auth.devnet.json"
 ```
 
 Get guardians status:
 
 ```
-PYTHONPATH=. python3 ./collector/guardians_status.py --network=testnet --wallets=$WALLETS_CONFIG
+PYTHONPATH=. python3 ./collector/guardians_status.py --network=devnet --wallets=$WALLETS_CONFIG
 ```
 
 If an `auth.json` registration file is already available, then:
 
 ```
-PYTHONPATH=. python3 ./collector/guardians_status.py --network=testnet --wallets=$WALLETS_CONFIG --auth=$AUTH_REGISTRATION
+PYTHONPATH=. python3 ./collector/guardians_status.py --network=devnet --wallets=$WALLETS_CONFIG --auth=$AUTH_REGISTRATION
 ```
 
 Register accounts on **trusted cosigner service**:
 
 ```
-PYTHONPATH=. python3 ./collector/guardians_register.py --network=testnet --wallets=$WALLETS_CONFIG --auth=$AUTH_REGISTRATION
+PYTHONPATH=. python3 ./collector/guardians_register.py --network=devnet --wallets=$WALLETS_CONFIG --auth=$AUTH_REGISTRATION
 ```
 
 Above, we are required to pass the path towards an auth registration file. If the file is missing, it will be created. If it exists, it will be updated in-place.
@@ -151,13 +151,13 @@ Above, we are required to pass the path towards an auth registration file. If th
 Set guardians (sign & broadcast transactions), given an auth registration file:
 
 ```
-PYTHONPATH=. python3 ./collector/guardians_set.py --network=testnet --wallets=$WALLETS_CONFIG --auth=$AUTH_REGISTRATION
+PYTHONPATH=. python3 ./collector/guardians_set.py --network=devnet --wallets=$WALLETS_CONFIG --auth=$AUTH_REGISTRATION
 ```
 
 Guard accounts (sign & broadcast transactions), given an auth registration file:
 
 ```
-PYTHONPATH=. python3 ./collector/guardians_guard.py --network=testnet --wallets=$WALLETS_CONFIG --auth=$AUTH_REGISTRATION
+PYTHONPATH=. python3 ./collector/guardians_guard.py --network=devnet --wallets=$WALLETS_CONFIG --auth=$AUTH_REGISTRATION
 ```
 
 Export auth registration entries (2FA secrets) to a Mobile Authenticator App:

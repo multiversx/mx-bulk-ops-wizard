@@ -53,8 +53,13 @@ def _do_main(cli_args: list[str]):
 
         if guardian_data.is_guarded:
             print(f"\t[green]Active[/green] guardian: {guardian_data.active_guardian}")
+        else:
+            print("\tNot guarded.")
+
         if guardian_data.pending_guardian:
             print(f"\t[yellow]Pending[/yellow] guardian: {guardian_data.pending_guardian} (activation epoch = {guardian_data.pending_epoch})")
+        else:
+            print("\tNo pending guardian.")
 
 
 if __name__ == "__main__":

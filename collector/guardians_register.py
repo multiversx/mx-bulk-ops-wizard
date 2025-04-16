@@ -75,7 +75,7 @@ def _do_main(cli_args: list[str]):
 
         # We save the file after each account.
         auth_app.export_to_registration_file(auth_path)
-        ux.show_message(f"File saved: {auth_path}")
+        print(f"[green]File saved: {auth_path}[/green]")
 
 
 if __name__ == "__main__":

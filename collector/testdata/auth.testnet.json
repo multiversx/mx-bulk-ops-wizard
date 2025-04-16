@@ -11,7 +11,7 @@
             "algorithm": "SHA1",
             "digits": 6,
             "period": 30,
-            "secret": "HPRS2QVWCOGFSAMZ2PXTSCSGHZJ3BFYG"
+            "secret": "PCXD5CGPPRQABCGIUIKULEDSN2G34YM4"
         }
     },
     {
@@ -26,7 +26,7 @@
             "algorithm": "SHA1",
             "digits": 6,
             "period": 30,
-            "secret": "ZMSHUXITAWGXCWY4QEQDN23EZOFHHXC2"
+            "secret": "E6FAWCVTLBELXPBPSCZANNCETIAWUSX5"
         }
     },
     {
@@ -41,7 +41,7 @@
             "algorithm": "SHA1",
             "digits": 6,
             "period": 30,
-            "secret": "VXUC3PBXGJAUEXLDGX4NDJCDAOGN3KQY"
+            "secret": "OGUPHE37A6XWKN7RGBLEEZBREFHCXOF3"
         }
     },
     {
@@ -56,7 +56,7 @@
             "algorithm": "SHA1",
             "digits": 6,
             "period": 30,
-            "secret": "M6ZVGTLU2TLA3JI35UEHIQLURBE7VZ6L"
+            "secret": "AGZLE325U4ZPB5N7L33HLZIC77YZFAHA"
         }
     }
 ]
