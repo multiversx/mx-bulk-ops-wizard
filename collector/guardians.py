@@ -206,6 +206,10 @@ class AuthApp:
             self.codes_from_outside_by_address[address] = code
 
     def export_to_registration_file(self, file: Path):
-        entries = [entry for entry in self.registration_entries_by_address.values()]
+        entries = self.get_all_entries()
         entries_json = json.dumps([entry.to_dictionary() for entry in entries], indent=4)
         file.write_text(entries_json)
+
+    def get_all_entries(self):
+        entries = [entry for entry in self.registration_entries_by_address.values()]
+        return entries
