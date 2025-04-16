@@ -303,7 +303,10 @@ class MyEntrypoint:
 
         return transaction
 
-    def send_multiple(self, wrappers: list[TransactionWrapper], chunk_size: int = DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS):
+    def send_multiple(self, auth_app: AuthApp, wrappers: list[TransactionWrapper], chunk_size: int = DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS):
+        print("Cosigning transactions, if necessary...")
+        self.guard_transactions(auth_app, wrappers)
+
         print(f"Sending {len(wrappers)} transactions...")
 
         chunks: list[list[TransactionWrapper]] = list(split_to_chunks(wrappers, chunk_size))
@@ -324,7 +327,10 @@ class MyEntrypoint:
 
         self.await_completed(wrappers)
 
-    def send_one_by_one(self, wrappers: list[TransactionWrapper]):
+    def send_one_by_one(self, auth_app: AuthApp, wrappers: list[TransactionWrapper]):
+        print("Cosigning transactions, if necessary...")
+        self.guard_transactions(auth_app, wrappers)
+
         print(f"Sending {len(wrappers)} transactions...")
 
         for index, wrapper in enumerate(wrappers):

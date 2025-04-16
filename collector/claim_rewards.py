@@ -3,7 +3,6 @@ import traceback
 from argparse import ArgumentParser
 from pathlib import Path
 
-from multiversx_sdk import Transaction
 from rich import print
 
 from collector import errors, ux
@@ -11,6 +10,7 @@ from collector.accounts import load_accounts
 from collector.configuration import CONFIGURATIONS
 from collector.constants import DEFAULT_GAS_PRICE
 from collector.entrypoint import MyEntrypoint
+from collector.guardians import AuthApp
 from collector.transactions import TransactionWrapper
 from collector.utils import format_amount
 
@@ -30,6 +30,7 @@ def _do_main(cli_args: list[str]):
     parser.add_argument("--wallets", required=True, help="path of the wallets configuration file")
     parser.add_argument("--threshold", type=int, default=0, help="claim rewards larger than this amount")
     parser.add_argument("--gas-price", type=int, default=DEFAULT_GAS_PRICE, help="gas price")
+    parser.add_argument("--auth", required=False, help="auth registration file")
     args = parser.parse_args(cli_args)
 
     network = args.network
@@ -38,6 +39,7 @@ def _do_main(cli_args: list[str]):
     accounts_wrappers = load_accounts(Path(args.wallets))
     threshold = args.threshold
     gas_price = args.gas_price
+    auth_app = AuthApp.new_from_registration_file(Path(args.auth)) if args.path else AuthApp([])
 
     entrypoint.recall_nonces([item.account for item in accounts_wrappers])
     transactions_wrappers: list[TransactionWrapper] = []
@@ -62,7 +64,7 @@ def _do_main(cli_args: list[str]):
             transactions_wrappers.append(TransactionWrapper(transaction, label))
 
     ux.confirm_continuation(f"Ready to claim rewards, by sending [green]{len(transactions_wrappers)}[/green] transactions?")
-    entrypoint.send_multiple(transactions_wrappers)
+    entrypoint.send_multiple(auth_app, transactions_wrappers)
 
 
 if __name__ == "__main__":

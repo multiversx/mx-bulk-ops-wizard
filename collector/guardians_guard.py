@@ -73,11 +73,8 @@ def _do_main(cli_args: list[str]):
         transaction = entrypoint.guard_account(account)
         transactions_wrappers.append(TransactionWrapper(transaction, label))
 
-    ux.confirm_continuation("Ready to cosign transactions, in case of guarded senders?")
-    entrypoint.guard_transactions(auth_app, transactions_wrappers)
-
     ux.confirm_continuation(f"Ready to guard accounts, by sending [green]{len(transactions_wrappers)}[/green] transactions?")
-    entrypoint.send_multiple(transactions_wrappers)
+    entrypoint.send_multiple(auth_app, transactions_wrappers)
 
 
 if __name__ == "__main__":

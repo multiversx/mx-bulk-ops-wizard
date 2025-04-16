@@ -159,3 +159,17 @@ Guard accounts (sign & broadcast transactions), given an auth registration file:
 ```
 PYTHONPATH=. python3 ./collector/guardians_guard.py --network=testnet --wallets=$WALLETS_CONFIG --auth=$AUTH_REGISTRATION
 ```
+
+Export auth registration entries (2FA secrets) to a Mobile Authenticator App:
+
+```
+not yet implemented
+```
+
+Cosign (guard) transactions in case of guarded senders: all existing scripts (e.g. claiming rewards, voting) **automatically guard transactions if necessary, under the hood**. Make sure to provide the optional `--auth=auth.json` parameter to those scripts, though. If not provided, when the scripts require to cosign (guard) a transaction, the user is prompted to provide pairs of `(sender; 2FA code)`, in the console. Such pairs can be obtained through `guardians_generate_codes.py` (see below).
+
+Obtain a bulk of 2FA codes (from a separate machine):
+
+```
+not yet implemented
+```
