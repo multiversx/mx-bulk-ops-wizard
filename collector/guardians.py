@@ -4,101 +4,64 @@ from typing import Any, Optional
 
 import pyotp
 import requests
-from multiversx_sdk import Address
 
 from collector import errors
 
 
 class CosignerRegistrationEntry:
     def __init__(self,
+                 address: str,
+                 label: str,
                  guardian: str,
-                 scheme: str,
-                 host: str,
-                 issuer: str,
-                 account: str,
-                 algorithm: str,
-                 digits: int,
-                 period: int,
-                 secret: str) -> None:
+                 auth_metadata: dict[str, Any]) -> None:
+        self.address = address
+        self.label = label
         self.guardian = guardian
-        self.scheme = scheme
-        self.host = host
-        self.issuer = issuer
-        self.account = account
-        self.algorithm = algorithm
-        self.digits = digits
-        self.period = period
-        self.secret = secret
+        self.auth_metadata = auth_metadata
 
     @classmethod
-    def new_from_response_payload(cls, data: dict[str, Any]):
+    def new_from_response_payload(cls, address: str, label: str, data: dict[str, Any]):
         guardian = data.get("guardian-address", "")
-
         otp = data.get("otp", {})
-        scheme = otp.get("scheme", "")
-        host = otp.get("host", "")
-        issuer = otp.get("issuer", "")
-        account = otp.get("account", "")
-        algorithm = otp.get("algorithm", "")
-        digits = int(otp.get("digits", 0))
-        period = int(otp.get("period", 0))
-        secret = otp.get("secret", "")
 
         return cls(
+            address=address,
+            label=label,
             guardian=guardian,
-            scheme=scheme,
-            host=host,
-            issuer=issuer,
-            account=account,
-            algorithm=algorithm,
-            digits=digits,
-            period=period,
-            secret=secret,
+            auth_metadata=otp
         )
 
     @classmethod
     def new_from_dictionary(cls, data: dict[str, Any]):
+        address = data.get("address", "")
+        label = data.get("label", "")
         guardian = data.get("guardian", "")
-        scheme = data.get("scheme", "")
-        host = data.get("host", "")
-        issuer = data.get("issuer", "")
-        account = data.get("account", "")
-        algorithm = data.get("algorithm", "")
-        digits = int(data.get("digits", 0))
-        period = int(data.get("period", 0))
-        secret = data.get("secret", "")
+        auth_metadata = data.get("authMetadata", {})
 
         return cls(
+            address=address,
+            label=label,
             guardian=guardian,
-            scheme=scheme,
-            host=host,
-            issuer=issuer,
-            account=account,
-            algorithm=algorithm,
-            digits=digits,
-            period=period,
-            secret=secret,
+            auth_metadata=auth_metadata,
         )
 
     def to_dictionary(self) -> dict[str, Any]:
         return {
+            "address": self.address,
+            "label": self.label,
             "guardian": self.guardian,
-            "scheme": self.scheme,
-            "host": self.host,
-            "issuer": self.issuer,
-            "account": self.account,
-            "algorithm": self.algorithm,
-            "digits": self.digits,
-            "period": self.period,
-            "secret": self.secret,
+            "authMetadata": self.auth_metadata,
         }
+
+    def get_secret(self) -> str:
+        return self.auth_metadata.get("secret", "")
 
 
 class CosignerClient:
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url
 
-    def register(self, native_auth_access_token: str, tag: str) -> CosignerRegistrationEntry:
+    def register(self, address: str, label: str, native_auth_access_token: str, tag: str) -> CosignerRegistrationEntry:
         headers = {
             "Authorization": f"Bearer {native_auth_access_token}",
         }
@@ -109,7 +72,7 @@ class CosignerClient:
 
         response = requests.post(f"{self.base_url}/guardian/register", headers=headers, json=data)
         payload = self._extract_response_payload(response)
-        payload_typed = CosignerRegistrationEntry.new_from_response_payload(payload)
+        payload_typed = CosignerRegistrationEntry.new_from_response_payload(address, label, payload)
         return payload_typed
 
     def verify_code(self, native_auth_access_token: str, code: str, guardian: str):
@@ -137,24 +100,44 @@ class CosignerClient:
         return response_data
 
 
-class OtpProvider:
+class AuthApp:
     def __init__(self, registration_entries: list[CosignerRegistrationEntry]) -> None:
-        self.registration_entries = registration_entries
+        self.registration_entries_by_address: dict[str, CosignerRegistrationEntry] = {entry.address: entry for entry in registration_entries}
+        self.codes_from_outside_by_address: dict[str, str] = {}
 
     @classmethod
-    def new_from_registration_file(cls, file: Path) -> "OtpProvider":
+    def new_from_registration_file(cls, file: Path) -> "AuthApp":
         file = file.expanduser().resolve()
 
         content = file.read_text()
         entries_raw: list[dict[str, Any]] = json.loads(content)
         entries = [CosignerRegistrationEntry.new_from_dictionary(entry) for entry in entries_raw]
 
-        return OtpProvider(entries)
+        return AuthApp(entries)
 
-    def get_otp(self, address: Address) -> str:
-        totp = pyotp.TOTP("...")
+    def learn_registration_entry(self, entry: CosignerRegistrationEntry):
+        self.registration_entries_by_address[entry.address] = entry
+
+    def get_code(self, address: str) -> str:
+        entry = self.registration_entries_by_address.get(address)
+        if entry is not None:
+            secret = entry.get_secret()
+            return self.get_code_given_secret(secret)
+
+        while address not in self.codes_from_outside_by_address:
+            self.ask_for_codes_from_outside()
+
+        return self.codes_from_outside_by_address[address]
+
+    def get_code_given_secret(self, secret: str) -> str:
+        totp = pyotp.TOTP(secret)
         code = totp.now()
         return code
 
-    def ask_otp_multiple(self):
-        pass
+    def ask_for_codes_from_outside(self):
+        self.codes_from_outside_by_address = {}
+
+    def export_to_registration_file(self, file: Path):
+        entries = [entry for entry in self.registration_entries_by_address.values()]
+        entries_json = json.dumps([entry.to_dictionary() for entry in entries], indent=4)
+        file.write_text(entries_json)
