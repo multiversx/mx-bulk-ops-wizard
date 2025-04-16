@@ -7,7 +7,7 @@ from multiversx_sdk import (AccountOnNetwork, Address, ApiNetworkProvider,
                             NativeAuthClientConfig, NetworkEntrypoint,
                             NetworkProviderConfig, NetworkProviderError,
                             ProxyNetworkProvider, Transaction,
-                            TransactionOnNetwork)
+                            TransactionComputer, TransactionOnNetwork)
 from multiversx_sdk.abi import BigUIntValue, BytesValue, U64Value
 from rich import print
 
@@ -18,6 +18,7 @@ from collector.constants import (
     ACCOUNT_AWAITING_PATIENCE_IN_MILLISECONDS,
     ACCOUNT_AWAITING_POLLING_TIMEOUT_IN_MILLISECONDS,
     CONTRACT_RESULTS_CODE_OK_ENCODED, COSIGNER_SERVICE_ID,
+    COSIGNER_SIGN_TRANSACTIONS_RETRY_DELAY_IN_SECONDS,
     DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS,
     MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_CLAIM_REWARDS,
     MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_REWARDS, METACHAIN_ID,
@@ -293,6 +294,15 @@ class MyEntrypoint:
 
         return transaction
 
+    def guard_account(self, sender: IMyAccount) -> Transaction:
+        controller = self.network_entrypoint.create_account_controller()
+        transaction = controller.create_transaction_for_guarding_account(
+            sender=sender,
+            nonce=sender.get_nonce_then_increment(),
+        )
+
+        return transaction
+
     def send_multiple(self, wrappers: list[TransactionWrapper], chunk_size: int = DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS):
         print(f"Sending {len(wrappers)} transactions...")
 
@@ -324,6 +334,37 @@ class MyEntrypoint:
             self.await_processing_started([wrapper])
 
         self.await_completed(wrappers)
+
+    def guard_transactions(self, auth_app: AuthApp, wrappers: list[TransactionWrapper]):
+        transaction_computer = TransactionComputer()
+        grouped_by_sender: dict[str, list[Transaction]] = {}
+
+        for index, wrapper in enumerate(wrappers):
+            sender = wrapper.transaction.sender.to_bech32()
+            grouped_by_sender.setdefault(sender, []).append(wrapper.transaction)
+
+        # Signatures are applied inline.
+        for sender, transactions in grouped_by_sender.items():
+            sender_address = Address.new_from_bech32(sender)
+            guardian_data = self.get_guardian_data(sender_address)
+
+            if not guardian_data.is_guarded:
+                continue
+
+            guardian = Address.new_from_bech32(guardian_data.active_guardian)
+
+            for transaction in transactions:
+                transaction_computer.apply_guardian(transaction, guardian)
+
+            while True:
+                try:
+                    print("Attempt to co-sign transactions from {sender_address}...")
+                    code = auth_app.get_code(sender)
+                    self.cosigner.sign_multiple_transactions(code, transactions)
+                    break
+                except KnownError as error:
+                    print(f"Unexpected error: [red]{error}[/red], will retry in {COSIGNER_SIGN_TRANSACTIONS_RETRY_DELAY_IN_SECONDS} seconds...")
+                    time.sleep(COSIGNER_SIGN_TRANSACTIONS_RETRY_DELAY_IN_SECONDS)
 
     def await_processing_started(self, wrappers: list[TransactionWrapper]) -> list[TransactionOnNetwork]:
         print(f"Await processing started for {len(wrappers)} transactions...")

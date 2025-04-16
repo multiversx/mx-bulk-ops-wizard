@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 import pyotp
 import requests
+from multiversx_sdk import Transaction
 from rich import print
 
 from collector import errors, ux
@@ -131,6 +132,29 @@ class CosignerClient:
 
         response = requests.post(f"{self.base_url}/guardian/verify-code", headers=headers, json=data)
         _ = self._extract_response_payload(response)
+
+    def sign_multiple_transactions(self, code: str, transactions: list[Transaction]):
+        print(f"sign_multiple_transactions, code = {code}, len(transactions) = {len(transactions)}")
+
+        data = {
+            "code": code,
+            "transactions": [transaction.to_dictionary() for transaction in transactions],
+        }
+
+        response = requests.post(f"{self.base_url}/guardian/sign-multiple-transactions", json=data)
+        payload = self._extract_response_payload(response)
+        signed_transactions = payload.get("transactions", [])
+
+        # We patch the transactions signatures inline (we don't blindly accept the response).
+        # We expect transaction order to not change (though, we do check).
+        for index, transaction in enumerate(transactions):
+            sender_signature = signed_transactions[index].get("signature", "")
+            guardian_signature = signed_transactions[index].get("guardianSignature", "")
+
+            assert transaction.signature == sender_signature, "unexpected cosigner response"
+            assert len(guardian_signature) > 0, "unexpected cosigner response"
+
+            transaction.guardian_signature = guardian_signature
 
     def _extract_response_payload(self, response: requests.Response) -> dict[str, Any]:
         respose_content = response.json()

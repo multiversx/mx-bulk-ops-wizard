@@ -153,3 +153,9 @@ Set guardians (sign & broadcast transactions), given an auth registration file:
 ```
 PYTHONPATH=. python3 ./collector/guardians_set.py --network=testnet --wallets=$WALLETS_CONFIG --auth=$AUTH_REGISTRATION
 ```
+
+Guard accounts (sign & broadcast transactions), given an auth registration file:
+
+```
+PYTHONPATH=. python3 ./collector/guardians_guard.py --network=testnet --wallets=$WALLETS_CONFIG --auth=$AUTH_REGISTRATION
+```
