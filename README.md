@@ -119,3 +119,27 @@ export WALLETS_CONFIG="./collector/testdata/wallets.config.json"
 export PROOFS="./proofs.json"
 PYTHONPATH=. python3 ./collector/vote_on_governance.py --network=devnet --wallets=$WALLETS_CONFIG --proofs=${PROOFS}
 ```
+
+## Guardians
+
+Get guardians status:
+
+```
+export WALLETS_CONFIG="./collector/testdata/wallets#foo.config.json"
+PYTHONPATH=. python3 ./collector/guardians_status.py --network=testnet --wallets=$WALLETS_CONFIG
+```
+
+If an `auth.json` registration file is already available, then:
+
+```
+export WALLETS_CONFIG="./collector/testdata/wallets#foo.config.json"
+export AUTH_REGISTRATION="./collector/testdata/auth.json"
+PYTHONPATH=. python3 ./collector/guardians_status.py --network=testnet --wallets=$WALLETS_CONFIG --auth=$AUTH_REGISTRATION
+```
+
+Register accounts on **trusted cosigner service**:
+
+```
+export WALLETS_CONFIG="./collector/testdata/wallets#foo.config.json"
+PYTHONPATH=. python3 ./collector/guardians_set.py --network=testnet --wallets=$WALLETS_CONFIG
+```

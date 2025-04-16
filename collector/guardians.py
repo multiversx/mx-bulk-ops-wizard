@@ -1,7 +1,7 @@
 import json
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import pyotp
 import requests
@@ -157,6 +157,9 @@ class AuthApp:
         entries = [CosignerRegistrationEntry.new_from_dictionary(entry) for entry in entries_raw]
 
         return AuthApp(entries)
+
+    def get_registration_entry(self, address: str) -> Optional[CosignerRegistrationEntry]:
+        return self.registration_entries_by_address.get(address)
 
     def learn_registration_entry(self, entry: CosignerRegistrationEntry):
         self.registration_entries_by_address[entry.address] = entry
