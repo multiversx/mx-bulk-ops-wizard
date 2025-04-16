@@ -88,7 +88,7 @@ def _do_main(cli_args: list[str]):
         transactions_wrappers.append(TransactionWrapper(transaction, label))
 
     ux.confirm_continuation(f"Ready to set guardians, by sending [green]{len(transactions_wrappers)}[/green] transactions?")
-    entrypoint.send_multiple(transactions_wrappers)
+    entrypoint.send_multiple(auth_app, transactions_wrappers)
 
 
 if __name__ == "__main__":
