@@ -17,14 +17,17 @@ from collector.configuration import Configuration
 from collector.constants import (
     ACCOUNT_AWAITING_PATIENCE_IN_MILLISECONDS,
     ACCOUNT_AWAITING_POLLING_TIMEOUT_IN_MILLISECONDS,
-    CONTRACT_RESULTS_CODE_OK_ENCODED, DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS,
+    CONTRACT_RESULTS_CODE_OK_ENCODED, COSIGNER_SERVICE_ID,
+    DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS,
     MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_CLAIM_REWARDS,
     MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_REWARDS, METACHAIN_ID,
     NETWORK_PROVIDER_NUM_RETRIES, NETWORK_PROVIDER_TIMEOUT_SECONDS,
     NETWORK_PROVIDERS_RETRY_DELAY_IN_SECONDS, NUM_PARALLEL_GET_NONCE_REQUESTS,
     NUM_PARALLEL_GET_TRANSACTION_REQUESTS)
 from collector.errors import KnownError, TransientError
+from collector.guardians import AuthApp, CosignerClient
 from collector.rewards import ClaimableRewards, ReceivedRewards, RewardsType
+from collector.timecache import TimeCache
 from collector.transactions import TransactionWrapper
 from collector.utils import split_to_chunks
 
@@ -49,13 +52,6 @@ class MyEntrypoint:
             config=NetworkProviderConfig(requests_options={"timeout": NETWORK_PROVIDER_TIMEOUT_SECONDS})
         )
 
-        native_auth_config = NativeAuthClientConfig(
-            origin=self.configuration.api_url,
-            api_url=self.configuration.api_url,
-        )
-
-        self.native_auth_client = NativeAuthClient(native_auth_config)
-
         self.account_awaiting_options = AwaitingOptions(
             polling_interval_in_milliseconds=ACCOUNT_AWAITING_POLLING_TIMEOUT_IN_MILLISECONDS,
             patience_in_milliseconds=ACCOUNT_AWAITING_PATIENCE_IN_MILLISECONDS
@@ -65,6 +61,15 @@ class MyEntrypoint:
             polling_interval_in_milliseconds=ACCOUNT_AWAITING_POLLING_TIMEOUT_IN_MILLISECONDS,
             patience_in_milliseconds=ACCOUNT_AWAITING_PATIENCE_IN_MILLISECONDS
         )
+
+        native_auth_config = NativeAuthClientConfig(
+            origin=self.configuration.api_url,
+            api_url=self.configuration.api_url,
+        )
+
+        self.native_auth_client = NativeAuthClient(native_auth_config)
+        self.cosigner = CosignerClient(configuration.cosigner_url)
+        self.timecache = TimeCache()
 
     def get_start_of_epoch_timestamp(self, epoch: int) -> int:
         url = f"network/epoch-start/{METACHAIN_ID}/by-epoch/{epoch}"
@@ -96,12 +101,11 @@ class MyEntrypoint:
         Pool(NUM_PARALLEL_GET_NONCE_REQUESTS).map(recall_nonce, accounts)
 
     def claim_rewards(self, delegator: IMyAccount, staking_provider: Address, gas_price: int) -> Transaction:
-        delegator_as_any: Any = delegator
         controller = self.network_entrypoint.create_delegation_controller()
 
         transaction = controller.create_transaction_for_claiming_rewards(
             sender=delegator,
-            nonce=delegator_as_any.get_nonce_then_increment(),
+            nonce=delegator.get_nonce_then_increment(),
             delegation_contract=staking_provider,
             gas_price=gas_price
         )
@@ -109,13 +113,12 @@ class MyEntrypoint:
         return transaction
 
     def claim_rewards_legacy(self, delegator: IMyAccount, gas_price: int) -> Transaction:
-        delegator_as_any: Any = delegator
         legacy_delegation_contract = Address.new_from_bech32(self.configuration.legacy_delegation_contract)
 
         controller = self.network_entrypoint.create_smart_contract_controller()
         transaction = controller.create_transaction_for_execute(
             sender=delegator,
-            nonce=delegator_as_any.get_nonce_then_increment(),
+            nonce=delegator.get_nonce_then_increment(),
             contract=legacy_delegation_contract,
             gas_limit=20_000_000,
             function="claimRewards",
@@ -208,12 +211,10 @@ class MyEntrypoint:
         return rewards
 
     def transfer_value(self, sender: IMyAccount, receiver: Address, amount: int) -> Transaction:
-        sender_as_any: Any = sender
-
         controller = self.network_entrypoint.create_transfers_controller()
         transaction = controller.create_transaction_for_native_token_transfer(
             sender=sender,
-            nonce=sender_as_any.get_nonce_then_increment(),
+            nonce=sender.get_nonce_then_increment(),
             receiver=receiver,
             native_transfer_amount=amount
         )
@@ -221,13 +222,12 @@ class MyEntrypoint:
         return transaction
 
     def vote_on_governance(self, sender: IMyAccount, proposal: int, choice: int, power: int, proof: bytes, gas_price: int) -> Transaction:
-        sender_as_any: Any = sender
         governance_contract = Address.new_from_bech32(self.configuration.governance_contract)
 
         controller = self.network_entrypoint.create_smart_contract_controller()
         transaction = controller.create_transaction_for_execute(
             sender=sender,
-            nonce=sender_as_any.get_nonce_then_increment(),
+            nonce=sender.get_nonce_then_increment(),
             contract=governance_contract,
             gas_limit=50_000_000,
             function="vote",
