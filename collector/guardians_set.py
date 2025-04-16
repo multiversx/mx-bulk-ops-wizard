@@ -67,10 +67,14 @@ def _do_main(cli_args: list[str]):
             if guardian_data.active_guardian == entry.guardian:
                 print(f"... active guardian is same as the one in the auth registration file")
             else:
-                print(f"... active guardian [red]is not same[/red] as the one in the auth registration file")
+                print(f"... active guardian [red]is not same[/red] as the one in the auth registration file (bad flow, please handle separately)")
 
-            if not Confirm.ask("Re-set guardian?"):
+            print("... please see: https://docs.multiversx.com/developers/built-in-functions/#setguardian")
+
+            if not Confirm.ask("Re-set guardian (tricky, but might produce the expected results)?"):
                 continue
+        else:
+            print(f"... not yet guarded")
 
         if guardian_data.pending_guardian:
             print(f"... account has a [blue]pending[/blue] guardian = {guardian_data.pending_guardian}")
@@ -78,10 +82,14 @@ def _do_main(cli_args: list[str]):
             if guardian_data.pending_guardian == entry.guardian:
                 print(f"... pending guardian is same as the one in the auth registration file")
             else:
-                print(f"... pending guardian [red]is not same[/red] as the one in the auth registration file")
+                print(f"... pending guardian [red]is not same[/red] as the one in the auth registration file (bad flow, please handle separately)")
 
-            if not Confirm.ask("Re-set guardian?"):
+            print("... please see: https://docs.multiversx.com/developers/built-in-functions/#setguardian")
+
+            if not Confirm.ask("Re-set guardian (tricky flow, might not work as expected / no-op on chain)?"):
                 continue
+        else:
+            print(f"... no pending guardian")
 
         guardian = Address.new_from_bech32(entry.guardian)
         transaction = entrypoint.set_guardian(account, guardian)
