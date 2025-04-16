@@ -115,7 +115,6 @@ PYTHONPATH=. python3 ./collector/do_transfers.py --network=devnet --wallets=$WAL
 ## Vote on governance
 
 ```
-export WALLETS_CONFIG="./collector/testdata/wallets.config.json"
 export PROOFS="./proofs.json"
 PYTHONPATH=. python3 ./collector/vote_on_governance.py --network=devnet --wallets=$WALLETS_CONFIG --proofs=${PROOFS}
 ```
@@ -125,14 +124,12 @@ PYTHONPATH=. python3 ./collector/vote_on_governance.py --network=devnet --wallet
 Get guardians status:
 
 ```
-export WALLETS_CONFIG="./collector/testdata/wallets#foo.config.json"
 PYTHONPATH=. python3 ./collector/guardians_status.py --network=testnet --wallets=$WALLETS_CONFIG
 ```
 
 If an `auth.json` registration file is already available, then:
 
 ```
-export WALLETS_CONFIG="./collector/testdata/wallets#foo.config.json"
 export AUTH_REGISTRATION="./collector/testdata/auth.json"
 PYTHONPATH=. python3 ./collector/guardians_status.py --network=testnet --wallets=$WALLETS_CONFIG --auth=$AUTH_REGISTRATION
 ```
@@ -140,6 +137,8 @@ PYTHONPATH=. python3 ./collector/guardians_status.py --network=testnet --wallets
 Register accounts on **trusted cosigner service**:
 
 ```
-export WALLETS_CONFIG="./collector/testdata/wallets#foo.config.json"
-PYTHONPATH=. python3 ./collector/guardians_set.py --network=testnet --wallets=$WALLETS_CONFIG
+export AUTH_REGISTRATION="./collector/testdata/auth.json"
+PYTHONPATH=. python3 ./collector/guardians_register.py --network=testnet --wallets=$WALLETS_CONFIG --auth=$AUTH_REGISTRATION
 ```
+
+Above, we are required to pass the path towards an auth registration file. If the file is missing it will be created. If it exists, it will be updated in-place.
