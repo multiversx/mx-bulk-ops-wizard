@@ -32,9 +32,7 @@ def _do_main(cli_args: list[str]):
     configuration = CONFIGURATIONS[network]
     entrypoint = MyEntrypoint(configuration)
     accounts_wrappers = load_accounts(Path(args.wallets))
-
-    auth_path = Path(args.auth).expanduser().resolve()
-    auth_app = AuthApp.new_from_registration_file(auth_path) if auth_path.is_file() else AuthApp([])
+    auth_app = AuthApp.new_from_registration_file(Path(args.auth)) if args.auth else AuthApp([])
 
     ux.show_message(f"Getting guardians status...")
 
