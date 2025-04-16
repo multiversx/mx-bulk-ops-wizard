@@ -1,11 +1,13 @@
 import json
+import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import pyotp
 import requests
+from rich import print
 
-from collector import errors
+from collector import errors, ux
 
 
 class CosignerRegistrationEntry:
@@ -123,7 +125,10 @@ class AuthApp:
             secret = entry.get_secret()
             return self.get_code_given_secret(secret)
 
+        print(f"Missing registration entry for [yellow]{address}[/yellow].")
+
         while address not in self.codes_from_outside_by_address:
+            print(f"Missing code for [yellow]{address}[/yellow].")
             self.ask_for_codes_from_outside()
 
         return self.codes_from_outside_by_address[address]
@@ -135,6 +140,25 @@ class AuthApp:
 
     def ask_for_codes_from_outside(self):
         self.codes_from_outside_by_address = {}
+
+        print("Please provide authentication codes in the following format (example):")
+        print("erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th 123456")
+        print("erd1k2s324ww2g0yj38qn2ch2jwctdy8mnfxep94q9arncc6xecg3xaq6mjse8 654321")
+        print()
+        print("Insert text below. Press 'Ctrl-D' (Linux / MacOS) or 'Ctrl-Z' (Windows) when done.")
+
+        input_text = sys.stdin.read().strip()
+        input_lines = input_text.splitlines()
+
+        for line in input_lines:
+            parts = line.split()
+
+            if len(parts) != 2:
+                ux.show_warning(f"Bad line: {line}")
+                continue
+
+            address, code = parts
+            self.codes_from_outside_by_address[address] = code
 
     def export_to_registration_file(self, file: Path):
         entries = [entry for entry in self.registration_entries_by_address.values()]
