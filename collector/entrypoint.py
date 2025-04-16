@@ -25,7 +25,8 @@ from collector.constants import (
     NETWORK_PROVIDERS_RETRY_DELAY_IN_SECONDS, NUM_PARALLEL_GET_NONCE_REQUESTS,
     NUM_PARALLEL_GET_TRANSACTION_REQUESTS)
 from collector.errors import KnownError, TransientError
-from collector.guardians import AuthApp, CosignerClient
+from collector.guardians import (AuthApp, CosignerClient,
+                                 CosignerRegistrationEntry)
 from collector.rewards import ClaimableRewards, ReceivedRewards, RewardsType
 from collector.timecache import TimeCache
 from collector.transactions import TransactionWrapper
@@ -242,7 +243,7 @@ class MyEntrypoint:
 
         return transaction
 
-    def register_guardian(self, auth_app: AuthApp, account_wrapper: AccountWrapper):
+    def register_cosigner(self, auth_app: AuthApp, account_wrapper: AccountWrapper) -> CosignerRegistrationEntry:
         access_token = self.get_native_auth_access_tokens(account_wrapper.account)
 
         registration_entry = self.cosigner.register(
@@ -261,6 +262,8 @@ class MyEntrypoint:
         )
 
         auth_app.learn_registration_entry(registration_entry)
+
+        return registration_entry
 
     def get_native_auth_init_token(self) -> str:
         init_token = self.timecache.get("native_auth_init_token", lambda: (self.native_auth_client.initialize(), 60))
@@ -302,6 +305,17 @@ class MyEntrypoint:
                 raise KnownError(f"sent {num_sent} transactions, instead of {len(chunk)}")
 
             self.await_processing_started(chunk)
+
+        self.await_completed(wrappers)
+
+    def send_one_by_one(self, wrappers: list[TransactionWrapper]):
+        print(f"Sending {len(wrappers)} transactions...")
+
+        for index, wrapper in enumerate(wrappers):
+            print(f"{index}: {wrapper.hash} ([yellow]{wrapper.label}[/yellow])")
+
+            _ = self.network_entrypoint.send_transaction(wrapper.transaction)
+            self.await_processing_started([wrapper])
 
         self.await_completed(wrappers)
 

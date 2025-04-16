@@ -1,0 +1,20 @@
+[
+    {
+        "name": "eve and frank",
+        "kind": "mnemonic",
+        "mnemonicFile": "~/mx-sdk-testwallets/users/mnemonic.txt",
+        "addressIndices": [4, 5]
+    },
+    {
+        "name": "carol",
+        "kind": "keystore",
+        "file": "~/mx-sdk-testwallets/users/carol.json",
+        "password": "password",
+        "addressIndices": []
+    },
+    {
+        "name": "heidi",
+        "kind": "pem",
+        "file": "~/mx-sdk-testwallets/users/heidi.pem"
+    }
+]
