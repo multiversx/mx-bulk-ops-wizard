@@ -11,22 +11,22 @@ from collector import errors
 class CosignerRegistrationEntry:
     def __init__(self,
                  address: str,
-                 label: str,
+                 wallet_name: str,
                  guardian: str,
                  auth_metadata: dict[str, Any]) -> None:
         self.address = address
-        self.label = label
+        self.wallet_name = wallet_name
         self.guardian = guardian
         self.auth_metadata = auth_metadata
 
     @classmethod
-    def new_from_response_payload(cls, address: str, label: str, data: dict[str, Any]):
+    def new_from_response_payload(cls, address: str, wallet_name: str, data: dict[str, Any]):
         guardian = data.get("guardian-address", "")
         otp = data.get("otp", {})
 
         return cls(
             address=address,
-            label=label,
+            wallet_name=wallet_name,
             guardian=guardian,
             auth_metadata=otp
         )
@@ -34,13 +34,13 @@ class CosignerRegistrationEntry:
     @classmethod
     def new_from_dictionary(cls, data: dict[str, Any]):
         address = data.get("address", "")
-        label = data.get("label", "")
+        wallet_name = data.get("walletName", "")
         guardian = data.get("guardian", "")
         auth_metadata = data.get("authMetadata", {})
 
         return cls(
             address=address,
-            label=label,
+            wallet_name=wallet_name,
             guardian=guardian,
             auth_metadata=auth_metadata,
         )
@@ -48,7 +48,7 @@ class CosignerRegistrationEntry:
     def to_dictionary(self) -> dict[str, Any]:
         return {
             "address": self.address,
-            "label": self.label,
+            "walletName": self.wallet_name,
             "guardian": self.guardian,
             "authMetadata": self.auth_metadata,
         }
@@ -61,18 +61,18 @@ class CosignerClient:
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url
 
-    def register(self, address: str, label: str, native_auth_access_token: str, tag: str) -> CosignerRegistrationEntry:
+    def register(self, native_auth_access_token: str, address: str, wallet_name: str) -> CosignerRegistrationEntry:
         headers = {
             "Authorization": f"Bearer {native_auth_access_token}",
         }
 
         data = {
-            "tag": tag
+            "tag": wallet_name
         }
 
         response = requests.post(f"{self.base_url}/guardian/register", headers=headers, json=data)
         payload = self._extract_response_payload(response)
-        payload_typed = CosignerRegistrationEntry.new_from_response_payload(address, label, payload)
+        payload_typed = CosignerRegistrationEntry.new_from_response_payload(address, wallet_name, payload)
         return payload_typed
 
     def verify_code(self, native_auth_access_token: str, code: str, guardian: str):
@@ -86,8 +86,7 @@ class CosignerClient:
         }
 
         response = requests.post(f"{self.base_url}/guardian/verify-code", headers=headers, json=data)
-        payload = self._extract_response_payload(response)
-        print(payload)
+        _ = self._extract_response_payload(response)
 
     def _extract_response_payload(self, response: requests.Response) -> dict[str, Any]:
         respose_content = response.json()

@@ -12,7 +12,7 @@ from multiversx_sdk.abi import BigUIntValue, BytesValue, U64Value
 from rich import print
 
 from collector import ux
-from collector.accounts import IMyAccount
+from collector.accounts import AccountWrapper, IMyAccount
 from collector.configuration import Configuration
 from collector.constants import (
     ACCOUNT_AWAITING_PATIENCE_IN_MILLISECONDS,
@@ -242,15 +242,47 @@ class MyEntrypoint:
 
         return transaction
 
+    def register_guardian(self, auth_app: AuthApp, account_wrapper: AccountWrapper):
+        access_token = self.get_native_auth_access_tokens(account_wrapper.account)
+
+        registration_entry = self.cosigner.register(
+            native_auth_access_token=access_token,
+            address=account_wrapper.account.address.to_bech32(),
+            wallet_name=account_wrapper.wallet_name,
+        )
+
+        secret = registration_entry.get_secret()
+        code = auth_app.get_code_given_secret(secret)
+
+        self.cosigner.verify_code(
+            native_auth_access_token=access_token,
+            code=code,
+            guardian=registration_entry.guardian,
+        )
+
+        auth_app.learn_registration_entry(registration_entry)
+
     def get_native_auth_init_token(self) -> str:
-        init_token = self.native_auth_client.initialize()
+        init_token = self.timecache.get("native_auth_init_token", lambda: (self.native_auth_client.initialize(), 60))
         return init_token
 
-    def get_native_auth_access_tokens(self, init_token: str, account: IMyAccount) -> str:
+    def get_native_auth_access_tokens(self, account: IMyAccount) -> str:
+        init_token = self.get_native_auth_init_token()
         token_for_signing = self.native_auth_client.get_token_for_signing(account.address, init_token)
         signature = account.sign_message(Message(token_for_signing))
         access_token = self.native_auth_client.get_token(address=account.address, token=init_token, signature=signature.hex())
         return access_token
+
+    def set_guardian(self, sender: IMyAccount, guardian: Address) -> Transaction:
+        controller = self.network_entrypoint.create_account_controller()
+        transaction = controller.create_transaction_for_setting_guardian(
+            sender=sender,
+            nonce=sender.get_nonce_then_increment(),
+            guardian_address=guardian,
+            service_id=COSIGNER_SERVICE_ID,
+        )
+
+        return transaction
 
     def send_multiple(self, wrappers: list[TransactionWrapper], chunk_size: int = DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS):
         print(f"Sending {len(wrappers)} transactions...")
