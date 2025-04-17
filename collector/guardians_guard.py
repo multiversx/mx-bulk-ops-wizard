@@ -41,7 +41,7 @@ def _do_main(cli_args: list[str]):
         item.account.address.to_bech32(): item for item in accounts_wrappers
     }
 
-    entrypoint.recall_nonces([item.account for item in accounts_wrappers])
+    entrypoint.recall_nonces(accounts_wrappers)
     transactions_wrappers: list[TransactionWrapper] = []
 
     ux.show_message("Creating and signing 'guard account' transactions for all auth registration entries...")
@@ -75,7 +75,7 @@ def _do_main(cli_args: list[str]):
             if not Confirm.ask("Attempt to guard (please don't)?"):
                 continue
 
-        transaction = entrypoint.guard_account(account)
+        transaction = entrypoint.guard_account(account_wrapper)
         transactions_wrappers.append(TransactionWrapper(transaction, label))
 
     ux.confirm_continuation(f"Ready to guard accounts, by sending [green]{len(transactions_wrappers)}[/green] transactions?")

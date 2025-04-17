@@ -41,7 +41,8 @@ def _do_main(cli_args: list[str]):
     gas_price = args.gas_price
     auth_app = AuthApp.new_from_registration_file(Path(args.auth)) if args.auth else AuthApp([])
 
-    entrypoint.recall_nonces([item.account for item in accounts_wrappers])
+    entrypoint.recall_nonces(accounts_wrappers)
+    entrypoint.recall_guardians(accounts_wrappers)
     transactions_wrappers: list[TransactionWrapper] = []
 
     ux.show_message("Looking for rewards to claim...")
@@ -59,7 +60,7 @@ def _do_main(cli_args: list[str]):
             continue
 
         print(f"\tClaim {format_amount(claimable_rewards)} EGLD from legacy delegation")
-        transaction = entrypoint.claim_rewards_legacy(account, gas_price)
+        transaction = entrypoint.claim_rewards_legacy(account_wrapper, gas_price)
         transactions_wrappers.append(TransactionWrapper(transaction, label))
 
     ux.confirm_continuation(f"Ready to claim rewards, by sending [green]{len(transactions_wrappers)}[/green] transactions?")

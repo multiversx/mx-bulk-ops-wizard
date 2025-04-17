@@ -49,10 +49,10 @@ def _do_main(cli_args: list[str]):
         if registration_entry:
             print(f"\tAuth registration entry available, guardian = {registration_entry.guardian}")
         else:
-            print("\tNo auth registration entry available.")
+            print("\t[yellow]No auth registration entry available.[/yellow]")
 
         if guardian_data.is_guarded:
-            print(f"\t[green]Active[/green] guardian: {guardian_data.active_guardian}")
+            print(f"\t[green]Guarded.[/green]")
         else:
             print("\tNot guarded.")
 

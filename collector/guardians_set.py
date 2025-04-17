@@ -42,7 +42,8 @@ def _do_main(cli_args: list[str]):
         item.account.address.to_bech32(): item for item in accounts_wrappers
     }
 
-    entrypoint.recall_nonces([item.account for item in accounts_wrappers])
+    entrypoint.recall_nonces(accounts_wrappers)
+    entrypoint.recall_guardians(accounts_wrappers)
     transactions_wrappers: list[TransactionWrapper] = []
 
     ux.show_message("Creating and signing 'set guardian' transactions for all auth registration entries...")
@@ -92,7 +93,7 @@ def _do_main(cli_args: list[str]):
             print(f"... no pending guardian")
 
         guardian = Address.new_from_bech32(entry.guardian)
-        transaction = entrypoint.set_guardian(account, guardian)
+        transaction = entrypoint.set_guardian(account_wrapper, guardian)
         transactions_wrappers.append(TransactionWrapper(transaction, label))
 
     ux.confirm_continuation(f"Ready to set guardians, by sending [green]{len(transactions_wrappers)}[/green] transactions?")

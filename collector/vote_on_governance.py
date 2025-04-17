@@ -59,7 +59,8 @@ def _do_main(cli_args: list[str]):
         item.address.to_bech32(): item for item in records
     }
 
-    entrypoint.recall_nonces([item.account for item in accounts_wrappers])
+    entrypoint.recall_nonces(accounts_wrappers)
+    entrypoint.recall_guardians(accounts_wrappers)
     transactions_wrappers: list[TransactionWrapper] = []
 
     ux.show_message("Crafting transactions...")
@@ -79,7 +80,7 @@ def _do_main(cli_args: list[str]):
         print(f"\tVote with power {format_amount(record.power)}")
 
         transaction = entrypoint.vote_on_governance(
-            sender=account,
+            sender=account_wrapper,
             proposal=proposal,
             choice=choice,
             power=record.power,

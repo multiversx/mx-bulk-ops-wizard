@@ -148,11 +148,12 @@ class CosignerClient:
         # We patch the transactions signatures inline (we don't blindly accept the response).
         # We expect transaction order to not change (though, we do check).
         for index, transaction in enumerate(transactions):
-            sender_signature = signed_transactions[index].get("signature", "")
-            guardian_signature = signed_transactions[index].get("guardianSignature", "")
+            sender_signature = bytes.fromhex(signed_transactions[index].get("signature", ""))
+            guardian_signature = bytes.fromhex(signed_transactions[index].get("guardianSignature", ""))
 
             assert transaction.signature == sender_signature, "unexpected cosigner response"
             assert len(guardian_signature) > 0, "unexpected cosigner response"
+            assert (transaction.guardian.to_bech32() if transaction.guardian else "") == signed_transactions[index].get("guardian")
 
             transaction.guardian_signature = guardian_signature
 

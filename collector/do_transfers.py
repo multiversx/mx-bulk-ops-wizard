@@ -53,14 +53,15 @@ def _do_main(cli_args: list[str]):
     data = json.loads(json_content)
     transfers = [Transfer.new_from_dictionary(item) for item in data]
 
-    entrypoint.recall_nonces([item.account for item in accounts_wrappers])
+    entrypoint.recall_nonces(accounts_wrappers)
+    entrypoint.recall_guardians(accounts_wrappers)
     transactions_wrappers: list[TransactionWrapper] = []
 
     ux.show_message("Creating and signing transactions...")
 
     for transfer in transfers:
         sender = accounts_wrappers_by_addresses[transfer.sender.to_bech32()]
-        transaction = entrypoint.transfer_value(sender.account, receiver, transfer.amount)
+        transaction = entrypoint.transfer_value(sender, receiver, transfer.amount)
         transactions_wrappers.append(TransactionWrapper(transaction, transfer.label))
 
     ux.confirm_continuation(f"Ready to transfer rewards, by sending [green]{len(transactions_wrappers)}[/green] transactions?")

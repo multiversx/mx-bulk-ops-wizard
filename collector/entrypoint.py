@@ -23,7 +23,8 @@ from collector.constants import (
     MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_CLAIM_REWARDS,
     MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_REWARDS, METACHAIN_ID,
     NETWORK_PROVIDER_NUM_RETRIES, NETWORK_PROVIDER_TIMEOUT_SECONDS,
-    NETWORK_PROVIDERS_RETRY_DELAY_IN_SECONDS, NUM_PARALLEL_GET_NONCE_REQUESTS,
+    NETWORK_PROVIDERS_RETRY_DELAY_IN_SECONDS,
+    NUM_PARALLEL_GET_GUARDIAN_DATA_REQUESTS, NUM_PARALLEL_GET_NONCE_REQUESTS,
     NUM_PARALLEL_GET_TRANSACTION_REQUESTS)
 from collector.errors import KnownError, TransientError
 from collector.guardians import (AuthApp, CosignerClient,
@@ -96,35 +97,44 @@ class MyEntrypoint:
         amount = data.get("claimableRewards", 0)
         return int(amount)
 
-    def recall_nonces(self, accounts: list[IMyAccount]):
-        def recall_nonce(account: Any):
-            account.nonce = self.network_entrypoint.recall_account_nonce(account.address)
+    def recall_nonces(self, accounts_wrappers: list[AccountWrapper]):
+        def recall_nonce(wrapper: AccountWrapper):
+            wrapper.account.nonce = self.network_entrypoint.recall_account_nonce(wrapper.account.address)
 
-        Pool(NUM_PARALLEL_GET_NONCE_REQUESTS).map(recall_nonce, accounts)
+        Pool(NUM_PARALLEL_GET_NONCE_REQUESTS).map(recall_nonce, accounts_wrappers)
 
-    def claim_rewards(self, delegator: IMyAccount, staking_provider: Address, gas_price: int) -> Transaction:
+    def recall_guardians(self, accounts: list[AccountWrapper]):
+        def recall_guardian(wrapper: AccountWrapper):
+            guardian_data = self.get_guardian_data(wrapper.account.address)
+            wrapper.guardian = Address.new_from_bech32(guardian_data.active_guardian) if guardian_data.is_guarded else None
+
+        Pool(NUM_PARALLEL_GET_GUARDIAN_DATA_REQUESTS).map(recall_guardian, accounts)
+
+    def claim_rewards(self, delegator: AccountWrapper, staking_provider: Address, gas_price: int) -> Transaction:
         controller = self.network_entrypoint.create_delegation_controller()
 
         transaction = controller.create_transaction_for_claiming_rewards(
-            sender=delegator,
-            nonce=delegator.get_nonce_then_increment(),
+            sender=delegator.account,
+            nonce=delegator.account.get_nonce_then_increment(),
             delegation_contract=staking_provider,
-            gas_price=gas_price
+            gas_price=gas_price,
+            guardian=delegator.guardian
         )
 
         return transaction
 
-    def claim_rewards_legacy(self, delegator: IMyAccount, gas_price: int) -> Transaction:
+    def claim_rewards_legacy(self, delegator: AccountWrapper, gas_price: int) -> Transaction:
         legacy_delegation_contract = Address.new_from_bech32(self.configuration.legacy_delegation_contract)
 
         controller = self.network_entrypoint.create_smart_contract_controller()
         transaction = controller.create_transaction_for_execute(
-            sender=delegator,
-            nonce=delegator.get_nonce_then_increment(),
+            sender=delegator.account,
+            nonce=delegator.account.get_nonce_then_increment(),
             contract=legacy_delegation_contract,
             gas_limit=20_000_000,
             function="claimRewards",
-            gas_price=gas_price
+            gas_price=gas_price,
+            guardian=delegator.guardian
         )
 
         return transaction
@@ -212,24 +222,25 @@ class MyEntrypoint:
 
         return rewards
 
-    def transfer_value(self, sender: IMyAccount, receiver: Address, amount: int) -> Transaction:
+    def transfer_value(self, sender: AccountWrapper, receiver: Address, amount: int) -> Transaction:
         controller = self.network_entrypoint.create_transfers_controller()
         transaction = controller.create_transaction_for_native_token_transfer(
-            sender=sender,
-            nonce=sender.get_nonce_then_increment(),
+            sender=sender.account,
+            nonce=sender.account.get_nonce_then_increment(),
             receiver=receiver,
-            native_transfer_amount=amount
+            native_transfer_amount=amount,
+            guardian=sender.guardian
         )
 
         return transaction
 
-    def vote_on_governance(self, sender: IMyAccount, proposal: int, choice: int, power: int, proof: bytes, gas_price: int) -> Transaction:
+    def vote_on_governance(self, sender: AccountWrapper, proposal: int, choice: int, power: int, proof: bytes, gas_price: int) -> Transaction:
         governance_contract = Address.new_from_bech32(self.configuration.governance_contract)
 
         controller = self.network_entrypoint.create_smart_contract_controller()
         transaction = controller.create_transaction_for_execute(
-            sender=sender,
-            nonce=sender.get_nonce_then_increment(),
+            sender=sender.account,
+            nonce=sender.account.get_nonce_then_increment(),
             contract=governance_contract,
             gas_limit=50_000_000,
             function="vote",
@@ -239,7 +250,8 @@ class MyEntrypoint:
                 BigUIntValue(power),
                 BytesValue(proof)
             ],
-            gas_price=gas_price
+            gas_price=gas_price,
+            guardian=sender.guardian
         )
 
         return transaction
@@ -283,22 +295,24 @@ class MyEntrypoint:
         access_token = self.native_auth_client.get_token(address=account.address, token=init_token, signature=signature.hex())
         return access_token
 
-    def set_guardian(self, sender: IMyAccount, guardian: Address) -> Transaction:
+    def set_guardian(self, sender: AccountWrapper, guardian: Address) -> Transaction:
         controller = self.network_entrypoint.create_account_controller()
         transaction = controller.create_transaction_for_setting_guardian(
-            sender=sender,
-            nonce=sender.get_nonce_then_increment(),
+            sender=sender.account,
+            nonce=sender.account.get_nonce_then_increment(),
             guardian_address=guardian,
             service_id=COSIGNER_SERVICE_ID,
+            # TODO: fix this (not currently supported in the SDKs).
+            # guardian=sender.guardian
         )
 
         return transaction
 
-    def guard_account(self, sender: IMyAccount) -> Transaction:
+    def guard_account(self, sender: AccountWrapper) -> Transaction:
         controller = self.network_entrypoint.create_account_controller()
         transaction = controller.create_transaction_for_guarding_account(
-            sender=sender,
-            nonce=sender.get_nonce_then_increment(),
+            sender=sender.account,
+            nonce=sender.account.get_nonce_then_increment(),
         )
 
         return transaction
@@ -342,29 +356,20 @@ class MyEntrypoint:
         self.await_completed(wrappers)
 
     def guard_transactions(self, auth_app: AuthApp, wrappers: list[TransactionWrapper]):
-        transaction_computer = TransactionComputer()
         grouped_by_sender: dict[str, list[Transaction]] = {}
 
         for index, wrapper in enumerate(wrappers):
+            if wrapper.transaction.guardian is None:
+                continue
+
             sender = wrapper.transaction.sender.to_bech32()
             grouped_by_sender.setdefault(sender, []).append(wrapper.transaction)
 
         # Signatures are applied inline.
         for sender, transactions in grouped_by_sender.items():
-            sender_address = Address.new_from_bech32(sender)
-            guardian_data = self.get_guardian_data(sender_address)
-
-            if not guardian_data.is_guarded:
-                continue
-
-            guardian = Address.new_from_bech32(guardian_data.active_guardian)
-
-            for transaction in transactions:
-                transaction_computer.apply_guardian(transaction, guardian)
-
             while True:
                 try:
-                    print("Attempt to co-sign transactions from {sender_address}...")
+                    print(f"Attempt to co-sign transactions from {sender}...")
                     code = auth_app.get_code(sender)
                     self.cosigner.sign_multiple_transactions(code, transactions)
                     break

@@ -1,7 +1,7 @@
 from pathlib import Path
-from typing import Protocol
+from typing import Optional, Protocol
 
-from multiversx_sdk import Account, LedgerAccount, Message
+from multiversx_sdk import Account, Address, LedgerAccount, Message
 from multiversx_sdk.core.interfaces import IAccount
 
 from collector import ux
@@ -21,11 +21,14 @@ class IMyAccount(IAccount, Protocol):
     def sign_message(self, message: Message) -> bytes:
         ...
 
+    nonce: int
+
 
 class AccountWrapper:
-    def __init__(self, wallet_name: str, account: IMyAccount) -> None:
+    def __init__(self, wallet_name: str, account: IMyAccount, guardian: Optional[Address] = None) -> None:
         self.wallet_name = wallet_name
         self.account = account
+        self.guardian = guardian
 
 
 def load_accounts(wallets_configuration_file: Path) -> list[AccountWrapper]:
