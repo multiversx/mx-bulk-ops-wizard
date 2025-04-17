@@ -121,6 +121,8 @@ class MyEntrypoint:
             guardian=delegator.guardian
         )
 
+        self._patch_transaction_wrt_guardians(delegator, transaction)
+
         return transaction
 
     def claim_rewards_legacy(self, delegator: AccountWrapper, gas_price: int) -> Transaction:
@@ -136,6 +138,8 @@ class MyEntrypoint:
             gas_price=gas_price,
             guardian=delegator.guardian
         )
+
+        self._patch_transaction_wrt_guardians(delegator, transaction)
 
         return transaction
 
@@ -232,6 +236,8 @@ class MyEntrypoint:
             guardian=sender.guardian
         )
 
+        self._patch_transaction_wrt_guardians(sender, transaction)
+
         return transaction
 
     def vote_on_governance(self, sender: AccountWrapper, proposal: int, choice: int, power: int, proof: bytes, gas_price: int) -> Transaction:
@@ -253,6 +259,8 @@ class MyEntrypoint:
             gas_price=gas_price,
             guardian=sender.guardian
         )
+
+        self._patch_transaction_wrt_guardians(sender, transaction)
 
         return transaction
 
@@ -306,6 +314,8 @@ class MyEntrypoint:
             # guardian=sender.guardian
         )
 
+        self._patch_transaction_wrt_guardians(sender, transaction)
+
         return transaction
 
     def guard_account(self, sender: AccountWrapper) -> Transaction:
@@ -329,7 +339,7 @@ class MyEntrypoint:
             print(f"Chunk {index}:")
 
             for item in chunk:
-                print(f"\t{item.hash} ([yellow]{item.label}[/yellow])")
+                print(f"\t{item.get_hash()} ([yellow]{item.label}[/yellow])")
 
             num_sent, _ = self.network_entrypoint.send_transactions([item.transaction for item in chunk])
             print(f"Chunk {index}: sent {num_sent} transactions.")
@@ -348,12 +358,20 @@ class MyEntrypoint:
         print(f"Sending {len(wrappers)} transactions...")
 
         for index, wrapper in enumerate(wrappers):
-            print(f"{index}: {wrapper.hash} ([yellow]{wrapper.label}[/yellow])")
+            print(f"{index}: {wrapper.get_hash()} ([yellow]{wrapper.label}[/yellow])")
 
             _ = self.network_entrypoint.send_transaction(wrapper.transaction)
             self.await_processing_started([wrapper])
 
         self.await_completed(wrappers)
+
+    # Workaround, bug in SDKs.
+    def _patch_transaction_wrt_guardians(self, account_wrapper: AccountWrapper, transaction: Transaction):
+        if account_wrapper.guardian is None:
+            return
+
+        TransactionComputer().apply_guardian(transaction, account_wrapper.guardian)
+        transaction.signature = account_wrapper.account.sign_transaction(transaction)
 
     def guard_transactions(self, auth_app: AuthApp, wrappers: list[TransactionWrapper]):
         grouped_by_sender: dict[str, list[Transaction]] = {}
@@ -388,9 +406,9 @@ class MyEntrypoint:
                 options=self.account_awaiting_options,
             )
 
-            transaction_on_network = self.proxy_network_provider.get_transaction(wrapper.hash)
+            transaction_on_network = self.proxy_network_provider.get_transaction(wrapper.get_hash())
 
-            print(f"Started: {self.configuration.explorer_url}/transactions/{wrapper.hash}")
+            print(f"Started: {self.configuration.explorer_url}/transactions/{wrapper.get_hash()}")
             return transaction_on_network
 
         transactions_on_network = Pool(NUM_PARALLEL_GET_TRANSACTION_REQUESTS).map(
@@ -403,11 +421,11 @@ class MyEntrypoint:
     def await_completed(self, wrappers: list[TransactionWrapper]) -> list[TransactionOnNetwork]:
         def await_completed_one(wrapper: TransactionWrapper) -> TransactionOnNetwork:
             transaction_on_network = self.api_network_provider.await_transaction_completed(
-                transaction_hash=wrapper.hash,
+                transaction_hash=wrapper.get_hash(),
                 options=self.transaction_awaiting_options
             )
 
-            print(f"Completed: {self.configuration.explorer_url}/transactions/{wrapper.hash}")
+            print(f"Completed: {self.configuration.explorer_url}/transactions/{wrapper.get_hash()}")
             return transaction_on_network
 
         ux.show_message(f"Transactions sent. Waiting for their completion...")
