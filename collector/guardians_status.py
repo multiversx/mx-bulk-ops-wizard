@@ -56,10 +56,21 @@ def _do_main(cli_args: list[str]):
         else:
             print("\tNot guarded.")
 
+        if guardian_data.active_guardian:
+            print(f"\t[blue]Active[/blue] guardian: {guardian_data.active_guardian}")
+        else:
+            print("\tNo active guardian.")
+
         if guardian_data.pending_guardian:
             print(f"\t[yellow]Pending[/yellow] guardian: {guardian_data.pending_guardian} (activation epoch = {guardian_data.pending_epoch})")
         else:
             print("\tNo pending guardian.")
+
+        if registration_entry and guardian_data.active_guardian:
+            if registration_entry.guardian == guardian_data.active_guardian:
+                print("\t[green]Active guardian and registered guardian match.[/green]")
+            else:
+                print("\t[red]Active guardian and registered guardian do not match![/red]")
 
 
 if __name__ == "__main__":
