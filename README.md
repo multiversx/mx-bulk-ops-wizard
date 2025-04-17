@@ -85,13 +85,13 @@ export RECEIVER="erd1testnlersh4z0wsv8kjx39me4rmnvjkwu8dsaea7ukdvvc9z396qykv7z7"
 ## Claim rewards (delegation)
 
 ```
-PYTHONPATH=. python3 ./collector/claim_rewards.py --network=devnet --wallets=$WALLETS_CONFIG --threshold=0
+PYTHONPATH=. python3 ./collector/claim_rewards.py --network=devnet --wallets=$WALLETS_CONFIG --threshold=0 --auth=$AUTH_REGISTRATION
 ```
 
 ## Claim rewards (legacy delegation)
 
 ```
-PYTHONPATH=. python3 ./collector/claim_rewards_legacy.py --network=devnet --wallets=$WALLETS_CONFIG --threshold=1
+PYTHONPATH=. python3 ./collector/claim_rewards_legacy.py --network=devnet --wallets=$WALLETS_CONFIG --threshold=1 --auth=$AUTH_REGISTRATION
 ```
 
 ## Summarize previously claimed (received) rewards
@@ -109,14 +109,14 @@ PYTHONPATH=. python3 ./collector/prepare_transfers.py --threshold=1 --infile=rew
 ## Transfer amounts to an account
 
 ```
-PYTHONPATH=. python3 ./collector/do_transfers.py --network=devnet --wallets=$WALLETS_CONFIG --infile=transfers.json --receiver=${RECEIVER}
+PYTHONPATH=. python3 ./collector/do_transfers.py --network=devnet --wallets=$WALLETS_CONFIG --infile=transfers.json --receiver=${RECEIVER} --auth=$AUTH_REGISTRATION
 ```
 
 ## Vote on governance
 
 ```
 export PROOFS="./proofs.json"
-PYTHONPATH=. python3 ./collector/vote_on_governance.py --network=devnet --wallets=$WALLETS_CONFIG --proofs=${PROOFS}
+PYTHONPATH=. python3 ./collector/vote_on_governance.py --network=devnet --wallets=$WALLETS_CONFIG --proofs=${PROOFS} --auth=$AUTH_REGISTRATION
 ```
 
 ## Guardians
