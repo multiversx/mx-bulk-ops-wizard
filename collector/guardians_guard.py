@@ -70,6 +70,11 @@ def _do_main(cli_args: list[str]):
             if not Confirm.ask("Attempt to guard (won't work)?"):
                 continue
 
+        if entry.guardian != guardian_data.active_guardian:
+            print(f"... registered guardian [red]does not match[/red] the active guardian")
+            if not Confirm.ask("Attempt to guard (please don't)?"):
+                continue
+
         transaction = entrypoint.guard_account(account)
         transactions_wrappers.append(TransactionWrapper(transaction, label))
 
