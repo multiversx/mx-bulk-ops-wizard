@@ -7,7 +7,7 @@ from multiversx_sdk import (AccountOnNetwork, Address, ApiNetworkProvider,
                             NativeAuthClientConfig, NetworkEntrypoint,
                             NetworkProviderConfig, NetworkProviderError,
                             ProxyNetworkProvider, Transaction,
-                            TransactionComputer, TransactionOnNetwork)
+                            TransactionOnNetwork)
 from multiversx_sdk.abi import BigUIntValue, BytesValue, U64Value
 from rich import print
 
@@ -121,8 +121,6 @@ class MyEntrypoint:
             guardian=delegator.guardian
         )
 
-        self._patch_transaction_wrt_guardians(delegator, transaction)
-
         return transaction
 
     def claim_rewards_legacy(self, delegator: AccountWrapper, gas_price: int) -> Transaction:
@@ -138,8 +136,6 @@ class MyEntrypoint:
             gas_price=gas_price,
             guardian=delegator.guardian
         )
-
-        self._patch_transaction_wrt_guardians(delegator, transaction)
 
         return transaction
 
@@ -236,8 +232,6 @@ class MyEntrypoint:
             guardian=sender.guardian
         )
 
-        self._patch_transaction_wrt_guardians(sender, transaction)
-
         return transaction
 
     def vote_on_governance(self, sender: AccountWrapper, proposal: int, choice: int, power: int, proof: bytes, gas_price: int) -> Transaction:
@@ -259,8 +253,6 @@ class MyEntrypoint:
             gas_price=gas_price,
             guardian=sender.guardian
         )
-
-        self._patch_transaction_wrt_guardians(sender, transaction)
 
         return transaction
 
@@ -310,11 +302,8 @@ class MyEntrypoint:
             nonce=sender.account.get_nonce_then_increment(),
             guardian_address=guardian,
             service_id=COSIGNER_SERVICE_ID,
-            # TODO: fix this (not currently supported in the SDKs).
-            # guardian=sender.guardian
+            guardian=sender.guardian
         )
-
-        self._patch_transaction_wrt_guardians(sender, transaction)
 
         return transaction
 
@@ -364,14 +353,6 @@ class MyEntrypoint:
             self.await_processing_started([wrapper])
 
         self.await_completed(wrappers)
-
-    # Workaround, bug in SDKs.
-    def _patch_transaction_wrt_guardians(self, account_wrapper: AccountWrapper, transaction: Transaction):
-        if account_wrapper.guardian is None:
-            return
-
-        TransactionComputer().apply_guardian(transaction, account_wrapper.guardian)
-        transaction.signature = account_wrapper.account.sign_transaction(transaction)
 
     def guard_transactions(self, auth_app: AuthApp, wrappers: list[TransactionWrapper]):
         grouped_by_sender: dict[str, list[Transaction]] = {}
