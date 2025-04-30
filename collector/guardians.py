@@ -53,60 +53,105 @@ class GuardianData:
         )
 
 
-class CosignerRegistrationEntry:
+class AuthRegistrationEntry:
     def __init__(self,
-                 address: str,
-                 wallet_name: str,
-                 guardian: str,
-                 auth_metadata: dict[str, Any]) -> None:
-        self.address = address
-        self.wallet_name = wallet_name
-        self.guardian = guardian
-        self.auth_metadata = auth_metadata
+                 context: dict[str, Any],
+                 issuer: str,
+                 label: str,
+                 algorithm: str,
+                 digits: int,
+                 interval: int,
+                 secret: str) -> None:
+        self.context = context
+        self.issuer = issuer
+        self.label = label
+        self.algorithm = algorithm
+        self.digits = digits
+        self.interval = interval
+        self.secret = secret
+
+    def get_address(self) -> str:
+        if "address" not in self.context:
+            raise errors.ProgrammingError("'address' not found in registration context")
+
+        return self.context["address"]
+
+    def get_guardian(self) -> str:
+        if "guardian" not in self.context:
+            raise errors.ProgrammingError("'guardian' not found in registration context")
+
+        return self.context["guardian"]
 
     @classmethod
     def new_from_response_payload(cls, address: str, wallet_name: str, data: dict[str, Any]):
         guardian = data.get("guardian-address", "")
+
+        context = {
+            "address": address,
+            "walletName": wallet_name,
+            "guardian": guardian,
+        }
+
         otp = data.get("otp", {})
+        issuer = otp.get("issuer", "")
+        algorithm = otp.get("algorithm", "").lower()
+        digits = int(otp.get("digits", 0))
+        interval = int(otp.get("period", 0))
+        secret = otp.get("secret", "")
 
         return cls(
-            address=address,
-            wallet_name=wallet_name,
-            guardian=guardian,
-            auth_metadata=otp
+            context=context,
+            issuer=issuer,
+            label=wallet_name,
+            algorithm=algorithm,
+            digits=digits,
+            interval=interval,
+            secret=secret
         )
 
     @classmethod
     def new_from_dictionary(cls, data: dict[str, Any]):
-        address = data.get("address", "")
-        wallet_name = data.get("walletName", "")
-        guardian = data.get("guardian", "")
-        auth_metadata = data.get("authMetadata", {})
+        context = data.get("context", {})
+
+        # Handle synonyms, on a best-effort basis.
+        issuer = data.get("issuer", "")
+        label = (data.get("account", "")
+                 or data.get("name", "")
+                 or data.get("label", "")
+                 or data.get("tag", ""))
+        algorithm = data.get("algorithm", "")
+        digits = data.get("digits", 0)
+        interval = (data.get("interval", 0)
+                    or data.get("period", 0))
+        secret = data.get("secret", "")
 
         return cls(
-            address=address,
-            wallet_name=wallet_name,
-            guardian=guardian,
-            auth_metadata=auth_metadata,
+            context=context,
+            issuer=issuer,
+            label=label,
+            algorithm=algorithm,
+            digits=digits,
+            interval=interval,
+            secret=secret,
         )
 
     def to_dictionary(self) -> dict[str, Any]:
         return {
-            "address": self.address,
-            "walletName": self.wallet_name,
-            "guardian": self.guardian,
-            "authMetadata": self.auth_metadata,
+            "context": self.context,
+            "issuer": self.issuer,
+            "label": self.label,
+            "algorithm": self.algorithm,
+            "digits": self.digits,
+            "interval": self.interval,
+            "secret": self.secret,
         }
-
-    def get_secret(self) -> str:
-        return self.auth_metadata.get("secret", "")
 
 
 class CosignerClient:
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url
 
-    def register(self, native_auth_access_token: str, address: str, wallet_name: str) -> CosignerRegistrationEntry:
+    def register(self, native_auth_access_token: str, address: str, wallet_name: str) -> AuthRegistrationEntry:
         headers = {
             "Authorization": f"Bearer {native_auth_access_token}",
         }
@@ -117,7 +162,7 @@ class CosignerClient:
 
         response = requests.post(f"{self.base_url}/guardian/register", headers=headers, json=data)
         payload = self._extract_response_payload(response)
-        payload_typed = CosignerRegistrationEntry.new_from_response_payload(address, wallet_name, payload)
+        payload_typed = AuthRegistrationEntry.new_from_response_payload(address, wallet_name, payload)
         return payload_typed
 
     def verify_code(self, native_auth_access_token: str, code: str, guardian: str):
@@ -169,8 +214,8 @@ class CosignerClient:
 
 
 class AuthApp:
-    def __init__(self, registration_entries: list[CosignerRegistrationEntry]) -> None:
-        self.registration_entries_by_address: dict[str, CosignerRegistrationEntry] = {entry.address: entry for entry in registration_entries}
+    def __init__(self, registration_entries: list[AuthRegistrationEntry]) -> None:
+        self.registration_entries_by_address: dict[str, AuthRegistrationEntry] = {entry.get_address(): entry for entry in registration_entries}
         self.codes_from_outside_by_address: dict[str, str] = {}
 
     @classmethod
@@ -179,20 +224,20 @@ class AuthApp:
 
         content = file.read_text()
         entries_raw: list[dict[str, Any]] = json.loads(content)
-        entries = [CosignerRegistrationEntry.new_from_dictionary(entry) for entry in entries_raw]
+        entries = [AuthRegistrationEntry.new_from_dictionary(entry) for entry in entries_raw]
 
         return AuthApp(entries)
 
-    def get_registration_entry(self, address: str) -> Optional[CosignerRegistrationEntry]:
+    def get_registration_entry(self, address: str) -> Optional[AuthRegistrationEntry]:
         return self.registration_entries_by_address.get(address)
 
-    def learn_registration_entry(self, entry: CosignerRegistrationEntry):
-        self.registration_entries_by_address[entry.address] = entry
+    def learn_registration_entry(self, entry: AuthRegistrationEntry):
+        self.registration_entries_by_address[entry.get_address()] = entry
 
     def get_code(self, address: str) -> str:
         entry = self.registration_entries_by_address.get(address)
         if entry is not None:
-            secret = entry.get_secret()
+            secret = entry.secret
             return self.get_code_given_secret(secret)
 
         print(f"Missing registration entry for [yellow]{address}[/yellow].")

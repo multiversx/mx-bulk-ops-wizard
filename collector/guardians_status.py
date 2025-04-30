@@ -47,7 +47,7 @@ def _do_main(cli_args: list[str]):
         guardian_data = entrypoint.get_guardian_data(address)
 
         if registration_entry:
-            print(f"\tAuth registration entry available, guardian = {registration_entry.guardian}")
+            print(f"\tAuth registration entry available, guardian = {registration_entry.get_guardian()}")
         else:
             print("\t[yellow]No auth registration entry available.[/yellow]")
 
@@ -67,7 +67,7 @@ def _do_main(cli_args: list[str]):
             print("\tNo pending guardian.")
 
         if registration_entry and guardian_data.active_guardian:
-            if registration_entry.guardian == guardian_data.active_guardian:
+            if registration_entry.get_guardian() == guardian_data.active_guardian:
                 print("\t[green]Active guardian and registered guardian match.[/green]")
             else:
                 print("\t[red]Active guardian and registered guardian do not match![/red]")

@@ -47,9 +47,9 @@ def _do_main(cli_args: list[str]):
     ux.show_message("Creating and signing 'guard account' transactions for all auth registration entries...")
 
     for entry in auth_app.get_all_entries():
-        account_wrapper = accounts_wrappers_by_addresses.get(entry.address)
+        account_wrapper = accounts_wrappers_by_addresses.get(entry.get_address())
         if not account_wrapper:
-            raise errors.UsageError(f"account (wallet) not found for registration entry {entry.address}")
+            raise errors.UsageError(f"account (wallet) not found for registration entry {entry.get_address()}")
 
         account = account_wrapper.account
         address = account.address
@@ -70,7 +70,7 @@ def _do_main(cli_args: list[str]):
             if not Confirm.ask("Attempt to guard (won't work)?"):
                 continue
 
-        if entry.guardian != guardian_data.active_guardian:
+        if entry.get_guardian() != guardian_data.active_guardian:
             print(f"... registered guardian [red]does not match[/red] the active guardian")
             if not Confirm.ask("Attempt to guard (please don't)?"):
                 continue

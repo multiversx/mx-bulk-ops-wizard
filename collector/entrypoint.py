@@ -27,8 +27,8 @@ from collector.constants import (
     NUM_PARALLEL_GET_GUARDIAN_DATA_REQUESTS, NUM_PARALLEL_GET_NONCE_REQUESTS,
     NUM_PARALLEL_GET_TRANSACTION_REQUESTS)
 from collector.errors import KnownError, TransientError
-from collector.guardians import (AuthApp, CosignerClient,
-                                 CosignerRegistrationEntry, GuardianData)
+from collector.guardians import (AuthApp, AuthRegistrationEntry,
+                                 CosignerClient, GuardianData)
 from collector.rewards import ClaimableRewards, ReceivedRewards, RewardsType
 from collector.timecache import TimeCache
 from collector.transactions import TransactionWrapper
@@ -262,7 +262,7 @@ class MyEntrypoint:
         guardian_data = GuardianData.new_from_response_payload(response_payload)
         return guardian_data
 
-    def register_cosigner(self, auth_app: AuthApp, account_wrapper: AccountWrapper) -> CosignerRegistrationEntry:
+    def register_cosigner(self, auth_app: AuthApp, account_wrapper: AccountWrapper) -> AuthRegistrationEntry:
         access_token = self.get_native_auth_access_tokens(account_wrapper.account)
 
         registration_entry = self.cosigner.register(
@@ -271,13 +271,13 @@ class MyEntrypoint:
             wallet_name=account_wrapper.wallet_name,
         )
 
-        secret = registration_entry.get_secret()
+        secret = registration_entry.secret
         code = auth_app.get_code_given_secret(secret)
 
         self.cosigner.verify_code(
             native_auth_access_token=access_token,
             code=code,
-            guardian=registration_entry.guardian,
+            guardian=registration_entry.get_guardian(),
         )
 
         auth_app.learn_registration_entry(registration_entry)

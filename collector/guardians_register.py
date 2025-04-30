@@ -54,7 +54,7 @@ def _do_main(cli_args: list[str]):
         guardian_data = entrypoint.get_guardian_data(address)
 
         if registration_entry:
-            print(f"... registration entry [blue]already available[/blue], guardian = {registration_entry.guardian}")
+            print(f"... registration entry [blue]already available[/blue], guardian = {registration_entry.get_guardian()}")
             if not Confirm.ask("Re-register (to get a new guardian)?"):
                 continue
 
@@ -69,7 +69,7 @@ def _do_main(cli_args: list[str]):
                 continue
 
         registration_entry = entrypoint.register_cosigner(auth_app, account_wrapper)
-        guardian = Address.new_from_bech32(registration_entry.guardian)
+        guardian = Address.new_from_bech32(registration_entry.get_guardian())
 
         print(f"[green]Registered with guardian = {guardian}[/green]")
 

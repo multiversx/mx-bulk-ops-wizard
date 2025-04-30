@@ -49,9 +49,9 @@ def _do_main(cli_args: list[str]):
     ux.show_message("Creating and signing 'set guardian' transactions for all auth registration entries...")
 
     for entry in auth_app.get_all_entries():
-        account_wrapper = accounts_wrappers_by_addresses.get(entry.address)
+        account_wrapper = accounts_wrappers_by_addresses.get(entry.get_address())
         if not account_wrapper:
-            raise errors.UsageError(f"account (wallet) not found for registration entry {entry.address}")
+            raise errors.UsageError(f"account (wallet) not found for registration entry {entry.get_address()}")
 
         account = account_wrapper.account
         address = account.address
@@ -65,7 +65,7 @@ def _do_main(cli_args: list[str]):
         if guardian_data.is_guarded:
             print(f"... account is [blue]already guarded[/blue]")
 
-            if guardian_data.active_guardian == entry.guardian:
+            if guardian_data.active_guardian == entry.get_guardian():
                 print(f"... active guardian is same as the one in the auth registration file")
             else:
                 print(f"... active guardian [red]is not same[/red] as the one in the auth registration file (bad flow, please handle separately)")
@@ -80,7 +80,7 @@ def _do_main(cli_args: list[str]):
         if guardian_data.pending_guardian:
             print(f"... account has a [blue]pending[/blue] guardian = {guardian_data.pending_guardian}")
 
-            if guardian_data.pending_guardian == entry.guardian:
+            if guardian_data.pending_guardian == entry.get_guardian():
                 print(f"... pending guardian is same as the one in the auth registration file")
             else:
                 print(f"... pending guardian [red]is not same[/red] as the one in the auth registration file (bad flow, please handle separately)")
@@ -92,7 +92,7 @@ def _do_main(cli_args: list[str]):
         else:
             print(f"... no pending guardian")
 
-        guardian = Address.new_from_bech32(entry.guardian)
+        guardian = Address.new_from_bech32(entry.get_guardian())
         transaction = entrypoint.set_guardian(account_wrapper, guardian)
         transactions_wrappers.append(TransactionWrapper(transaction, label))
 

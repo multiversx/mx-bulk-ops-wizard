@@ -14,6 +14,11 @@ class KnownError(Exception):
         return str(self)
 
 
+class ProgrammingError(KnownError):
+    def __init__(self, message: str):
+        super().__init__(f"programming error: {message}")
+
+
 class BadConfigurationError(KnownError):
     def __init__(self, message: str):
         super().__init__(f"bad configuration: {message}")
