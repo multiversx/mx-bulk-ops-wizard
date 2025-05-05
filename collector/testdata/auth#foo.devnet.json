@@ -3,52 +3,52 @@
         "context": {
             "address": "erd18tudnj2z8vjh0339yu3vrkgzz2jpz8mjq0uhgnmklnap6z33qqeszq2yn4",
             "walletName": "eve and frank",
-            "guardian": "erd1jchgjc2eq7mg63te76rw4f7un65sfsxqykds98pgxnejxrv230cqyptkkn"
+            "guardian": "erd1knvryg9g2xdc8u9w93qdwq3v49q57fnm064d76yvkzg4plktychqhxdqga"
         },
         "issuer": "MultiversX",
         "label": "eve and frank",
-        "algorithm": "SHA1",
+        "algorithm": "sha1",
         "digits": 6,
         "interval": 30,
-        "secret": "3RK2OHHBJ7AEQK6YOXEDCAORRZDK4E5T"
+        "secret": "SBW2UMML2YFPJJMK5FYZAZSAAJPLSJJB"
     },
     {
         "context": {
             "address": "erd1kdl46yctawygtwg2k462307dmz2v55c605737dp3zkxh04sct7asqylhyv",
             "walletName": "eve and frank",
-            "guardian": "erd1vfetqhack5lw8ngdw63530chjvy82shkyc05342w4svm6v4y8uqqetxvm0"
+            "guardian": "erd1qv5c2lldmrns4ezz0lqusgpu0t4cvk9al6g4hzhn7fp5x32fev2sre5fkr"
         },
         "issuer": "MultiversX",
         "label": "eve and frank",
-        "algorithm": "SHA1",
+        "algorithm": "sha1",
         "digits": 6,
         "interval": 30,
-        "secret": "SGFCLYBIFYQDW3KXT4LMJOCM3D7KQYDO"
+        "secret": "Y2IRFPWVW5QODAUFL3V6QK36RXGHCHBM"
     },
     {
         "context": {
             "address": "erd1k2s324ww2g0yj38qn2ch2jwctdy8mnfxep94q9arncc6xecg3xaq6mjse8",
             "walletName": "carol",
-            "guardian": "erd152mfnun43qafx2tgg2qhztkrnmccg0tsqkc9w2xsuprlulyvarwqzgjwmc"
+            "guardian": "erd12u2yqrr9kn7fgyca7gk8dujdawm2kedgvmpn32lyuxxmehdgl29sm6p26r"
         },
         "issuer": "MultiversX",
         "label": "carol",
-        "algorithm": "SHA1",
+        "algorithm": "sha1",
         "digits": 6,
         "interval": 30,
-        "secret": "HKFSK44UBZERTR4K47N6Y6PDPACSBSA5"
+        "secret": "FWHQMS3FOHY6I6FMZE2VVGE47NJIWZB4"
     },
     {
         "context": {
             "address": "erd1dc3yzxxeq69wvf583gw0h67td226gu2ahpk3k50qdgzzym8npltq7ndgha",
             "walletName": "heidi",
-            "guardian": "erd1dg2vgfk9u6an2j8p5yr3grxsyq64u65lq7lut28ec4urdw2x3luqhah4ex"
+            "guardian": "erd1ssrnya4hsq4kajk0n340eznm27e5s2cz62vyadquku006mf7ur0qtl99l0"
         },
         "issuer": "MultiversX",
         "label": "heidi",
-        "algorithm": "SHA1",
+        "algorithm": "sha1",
         "digits": 6,
         "interval": 30,
-        "secret": "ND4MWTIEJQXVG75MHHELCPYL63NHSAMP"
+        "secret": "M2S22ZSNEQCTOWODBIWQ7PIT4PKRDPLX"
     }
 ]

@@ -1,5 +1,4 @@
 import json
-import sys
 from pathlib import Path
 from typing import Any, Optional
 
@@ -7,6 +6,7 @@ import pyotp
 import requests
 from multiversx_sdk import Transaction
 from rich import print
+from rich.prompt import Prompt
 
 from collector import errors, ux
 
@@ -216,7 +216,6 @@ class CosignerClient:
 class AuthApp:
     def __init__(self, registration_entries: list[AuthRegistrationEntry]) -> None:
         self.registration_entries_by_address: dict[str, AuthRegistrationEntry] = {entry.get_address(): entry for entry in registration_entries}
-        self.codes_from_outside_by_address: dict[str, str] = {}
 
     @classmethod
     def new_from_registration_file(cls, file: Path) -> "AuthApp":
@@ -241,39 +240,13 @@ class AuthApp:
             return self.get_code_given_secret(secret)
 
         print(f"Missing registration entry for [yellow]{address}[/yellow].")
-
-        while address not in self.codes_from_outside_by_address:
-            print(f"Missing code for [yellow]{address}[/yellow].")
-            self.ask_for_codes_from_outside()
-
-        return self.codes_from_outside_by_address[address]
+        code = Prompt.ask(f"Enter code for [yellow]{address}[/yellow]")
+        return code
 
     def get_code_given_secret(self, secret: str) -> str:
         totp = pyotp.TOTP(secret)
         code = totp.now()
         return code
-
-    def ask_for_codes_from_outside(self):
-        self.codes_from_outside_by_address = {}
-
-        print("Please provide authentication codes in the following format (example):")
-        print("erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th 123456")
-        print("erd1k2s324ww2g0yj38qn2ch2jwctdy8mnfxep94q9arncc6xecg3xaq6mjse8 654321")
-        print()
-        print("Insert text below. Press 'Ctrl-D' (Linux / MacOS) or 'Ctrl-Z' (Windows) when done.")
-
-        input_text = sys.stdin.read().strip()
-        input_lines = input_text.splitlines()
-
-        for line in input_lines:
-            parts = line.split()
-
-            if len(parts) != 2:
-                ux.show_warning(f"Bad line: {line}")
-                continue
-
-            address, code = parts
-            self.codes_from_outside_by_address[address] = code
 
     def export_to_registration_file(self, file: Path):
         entries = self.get_all_entries()

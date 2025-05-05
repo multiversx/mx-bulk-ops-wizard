@@ -148,10 +148,16 @@ PYTHONPATH=. python3 ./collector/guardians_register.py --network=devnet --wallet
 
 Above, we are required to pass the path towards an **auth registration file**. If the file is missing, it will be created. If it exists, it will be updated in-place.
 
-Set guardians (sign & broadcast transactions), given an **auth registration file**:
+**Set guardians** (sign & broadcast transactions), given an **auth registration file**:
 
 ```
 PYTHONPATH=. python3 ./collector/guardians_set.py --network=devnet --wallets=$WALLETS_CONFIG --auth=$AUTH_REGISTRATION
+```
+
+Alternatively, if the accounts are already guarded (say, with 2FA accounts on a Mobile application), you can **update the guardians** as follows:
+
+```
+PYTHONPATH=. python3 ./collector/guardians_update.py --network=devnet --wallets=$WALLETS_CONFIG --new-auth=$AUTH_REGISTRATION
 ```
 
 Guard accounts (sign & broadcast transactions), given an **auth registration file**:
