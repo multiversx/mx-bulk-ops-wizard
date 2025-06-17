@@ -25,7 +25,7 @@ def _do_main(cli_args: list[str]):
     parser = ArgumentParser()
     parser.add_argument("--network", choices=CONFIGURATIONS.keys(), required=True, help="network name")
     parser.add_argument("--wallets", required=True, help="path of the wallets configuration file")
-    parser.add_argument("--auth", required=True, help="auth registration file")
+    parser.add_argument("--auth", required=False, help="auth registration file")
     args = parser.parse_args(cli_args)
 
     network = args.network
