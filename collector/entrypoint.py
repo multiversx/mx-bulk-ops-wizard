@@ -1,12 +1,12 @@
 import time
 from multiprocessing.dummy import Pool
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 from multiversx_sdk import (AccountOnNetwork, Address, ApiNetworkProvider,
                             AwaitingOptions, Message, NativeAuthClient,
                             NativeAuthClientConfig, NetworkEntrypoint,
                             NetworkProviderConfig, NetworkProviderError,
-                            ProxyNetworkProvider, Transaction,
+                            ProxyNetworkProvider, TokenTransfer, Transaction,
                             TransactionOnNetwork)
 from multiversx_sdk.abi import BigUIntValue, BytesValue, U64Value
 from rich import print
@@ -26,6 +26,7 @@ from collector.constants import (
     NETWORK_PROVIDERS_RETRY_DELAY_IN_SECONDS,
     NUM_PARALLEL_GET_GUARDIAN_DATA_REQUESTS, NUM_PARALLEL_GET_NONCE_REQUESTS,
     NUM_PARALLEL_GET_TRANSACTION_REQUESTS)
+from collector.currencies import is_native_currency
 from collector.errors import KnownError, TransientError
 from collector.guardians import (AuthApp, AuthRegistrationEntry,
                                  CosignerClient, GuardianData)
@@ -222,17 +223,25 @@ class MyEntrypoint:
 
         return rewards
 
-    def transfer_value(self, sender: AccountWrapper, receiver: Address, amount: int) -> Transaction:
+    def transfer_funds(self, sender: AccountWrapper, receiver: Address, transfer: TokenTransfer) -> Transaction:
         controller = self.network_entrypoint.create_transfers_controller()
-        transaction = controller.create_transaction_for_native_token_transfer(
+
+        if is_native_currency(transfer.token.identifier):
+            return controller.create_transaction_for_transfer(
+                sender=sender.account,
+                nonce=sender.account.get_nonce_then_increment(),
+                receiver=receiver,
+                native_transfer_amount=transfer.amount,
+                guardian=sender.guardian
+            )
+
+        return controller.create_transaction_for_transfer(
             sender=sender.account,
             nonce=sender.account.get_nonce_then_increment(),
             receiver=receiver,
-            native_transfer_amount=amount,
+            token_transfers=[transfer],
             guardian=sender.guardian
         )
-
-        return transaction
 
     def vote_on_governance(self, sender: AccountWrapper, proposal: int, choice: int, power: int, proof: bytes, gas_price: int) -> Transaction:
         governance_contract = Address.new_from_bech32(self.configuration.governance_contract)

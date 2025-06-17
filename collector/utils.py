@@ -21,11 +21,11 @@ def format_amount(currency_provider: ICurrencyProvider, amount: int, token_ident
     num_decimals = currency_provider.get_currency_num_decimals(token_identifier)
     name = currency_provider.get_currency_name(token_identifier)
 
-    return f"{amount / ONE_QUINTILLION:.{num_decimals} {name}f}"
+    return f"{amount / ONE_QUINTILLION:.{num_decimals}f} {name}"
 
 
 def format_native_amount(amount: int) -> str:
-    return f"{amount / ONE_QUINTILLION:.{18}f}"
+    return f"{amount / ONE_QUINTILLION:.18f} EGLD"
 
 
 def format_time(timestamp: int) -> str:

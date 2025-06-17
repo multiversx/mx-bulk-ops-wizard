@@ -13,7 +13,7 @@ from collector.configuration import CONFIGURATIONS
 from collector.entrypoint import MyEntrypoint
 from collector.guardians import AuthApp
 from collector.transactions import TransactionWrapper
-from collector.transfers import Transfer
+from collector.transfers import MyTransfer
 
 
 def main(cli_args: list[str] = sys.argv[1:]):
@@ -51,7 +51,7 @@ def _do_main(cli_args: list[str]):
 
     json_content = infile_path.read_text()
     data = json.loads(json_content)
-    transfers = [Transfer.new_from_dictionary(item) for item in data]
+    transfers = [MyTransfer.new_from_dictionary(item) for item in data]
 
     entrypoint.recall_nonces(accounts_wrappers)
     entrypoint.recall_guardians(accounts_wrappers)
@@ -61,7 +61,7 @@ def _do_main(cli_args: list[str]):
 
     for transfer in transfers:
         sender = accounts_wrappers_by_addresses[transfer.sender.to_bech32()]
-        transaction = entrypoint.transfer_value(sender, receiver, transfer.amount)
+        transaction = entrypoint.transfer_funds(sender, receiver, transfer.token_transfer)
         transactions_wrappers.append(TransactionWrapper(transaction, transfer.label))
 
     ux.confirm_continuation(f"Ready to transfer rewards, by sending [green]{len(transactions_wrappers)}[/green] transactions?")
