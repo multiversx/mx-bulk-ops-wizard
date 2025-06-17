@@ -32,7 +32,7 @@ def _do_main(cli_args: list[str]):
     parser.add_argument("--wallets", required=True, help="path of the wallets configuration file")
     parser.add_argument("--infile", required=True, help="collection instructions (see 'collect_rewards.py')")
     parser.add_argument("--receiver", required=True, help="the unique receiver")
-    parser.add_argument("--auth", required=False, help="auth registration file")
+    parser.add_argument("--auth", required=True, help="auth registration file")
 
     args = parser.parse_args(cli_args)
 
