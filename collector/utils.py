@@ -1,7 +1,15 @@
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Protocol
 
 from collector.constants import ONE_QUINTILLION
+
+
+class ICurrencyProvider(Protocol):
+    def get_currency_name(self, token_identifier: str) -> str:
+        ...
+
+    def get_currency_num_decimals(self, token_identifier: str) -> int:
+        ...
 
 
 def split_to_chunks(items: list[Any], chunk_size: int):
@@ -9,8 +17,15 @@ def split_to_chunks(items: list[Any], chunk_size: int):
         yield items[i:i + chunk_size]
 
 
-def format_amount(amount: int, num_decimals=18) -> str:
-    return f"{amount / ONE_QUINTILLION:.{num_decimals}f}"
+def format_amount(currency_provider: ICurrencyProvider, amount: int, token_identifier: str = "") -> str:
+    num_decimals = currency_provider.get_currency_num_decimals(token_identifier)
+    name = currency_provider.get_currency_name(token_identifier)
+
+    return f"{amount / ONE_QUINTILLION:.{num_decimals} {name}f}"
+
+
+def format_native_amount(amount: int) -> str:
+    return f"{amount / ONE_QUINTILLION:.{18}f}"
 
 
 def format_time(timestamp: int) -> str:

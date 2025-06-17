@@ -12,7 +12,7 @@ from collector.constants import DEFAULT_GAS_PRICE
 from collector.entrypoint import MyEntrypoint
 from collector.guardians import AuthApp
 from collector.transactions import TransactionWrapper
-from collector.utils import format_amount
+from collector.utils import format_native_amount
 
 
 def main(cli_args: list[str] = sys.argv[1:]):
@@ -60,7 +60,7 @@ def _do_main(cli_args: list[str]):
             if item.amount < threshold:
                 continue
 
-            print(f"\tClaim {format_amount(item.amount)} EGLD from {item.staking_provider.to_bech32()}")
+            print(f"\tClaim {format_native_amount(item.amount)} from {item.staking_provider.to_bech32()}")
             transaction = entrypoint.claim_rewards(account_wrapper, item.staking_provider, gas_price)
             transactions_wrappers.append(TransactionWrapper(transaction, label))
 

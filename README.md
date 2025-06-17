@@ -103,7 +103,7 @@ PYTHONPATH=. python3 ./collector/collect_rewards.py --network=devnet --wallets=$
 ## Prepare amounts to transfer
 
 ```
-PYTHONPATH=. python3 ./collector/prepare_transfers.py --threshold=1 --infile=rewards.json --outfile=transfers.json
+PYTHONPATH=. python3 ./collector/prepare_transfers_of_rewards.py --threshold=1 --infile=rewards.json --outfile=transfers.json
 ```
 
 ## Transfer amounts to an account

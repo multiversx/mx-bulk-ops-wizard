@@ -14,7 +14,7 @@ from collector.entrypoint import MyEntrypoint
 from collector.governance import GovernanceRecord
 from collector.guardians import AuthApp
 from collector.transactions import TransactionWrapper
-from collector.utils import format_amount
+from collector.utils import format_native_amount
 
 
 def main(cli_args: list[str] = sys.argv[1:]):
@@ -77,7 +77,7 @@ def _do_main(cli_args: list[str]):
             continue
 
         record = records_by_adresses[address.to_bech32()]
-        print(f"\tVote with power {format_amount(record.power)}")
+        print(f"\tVote with power {format_native_amount(record.power)}")
 
         transaction = entrypoint.vote_on_governance(
             sender=account_wrapper,

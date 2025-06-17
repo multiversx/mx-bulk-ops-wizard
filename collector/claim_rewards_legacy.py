@@ -12,7 +12,7 @@ from collector.constants import DEFAULT_GAS_PRICE
 from collector.entrypoint import MyEntrypoint
 from collector.guardians import AuthApp
 from collector.transactions import TransactionWrapper
-from collector.utils import format_amount
+from collector.utils import format_native_amount
 
 
 def main(cli_args: list[str] = sys.argv[1:]):
@@ -59,7 +59,7 @@ def _do_main(cli_args: list[str]):
         if claimable_rewards < threshold:
             continue
 
-        print(f"\tClaim {format_amount(claimable_rewards)} EGLD from legacy delegation")
+        print(f"\tClaim {format_native_amount(claimable_rewards)} from legacy delegation")
         transaction = entrypoint.claim_rewards_legacy(account_wrapper, gas_price)
         transactions_wrappers.append(TransactionWrapper(transaction, label))
 

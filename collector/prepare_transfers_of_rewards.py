@@ -4,13 +4,15 @@ import traceback
 from argparse import ArgumentParser
 from pathlib import Path
 
+from multiversx_sdk import TokenTransfer
 from rich import print
 
 from collector import errors, ux
+from collector.currencies import OnlyNativeCurrencyProvider
 from collector.errors import UsageError
 from collector.rewards import ReceivedRewardsOfAccount
-from collector.transfers import Transfer
-from collector.utils import format_amount
+from collector.transfers import MyTransfer
+from collector.utils import format_native_amount
 
 
 def main(cli_args: list[str] = sys.argv[1:]):
@@ -31,6 +33,7 @@ def _do_main(cli_args: list[str]):
 
     args = parser.parse_args(cli_args)
 
+    currency_provider = OnlyNativeCurrencyProvider()
     threshold = args.threshold
     infile = args.infile
     outfile = args.outfile
@@ -45,7 +48,7 @@ def _do_main(cli_args: list[str]):
     json_content = infile_path.read_text()
     data = json.loads(json_content)
     all_rewards = [ReceivedRewardsOfAccount.new_from_dictionary(item) for item in data]
-    all_transfers: list[Transfer] = []
+    all_transfers: list[MyTransfer] = []
 
     for rewards_of_account in all_rewards:
         address = rewards_of_account.address
@@ -57,14 +60,14 @@ def _do_main(cli_args: list[str]):
             continue
 
         print(address.to_bech32(), f"([yellow]{label}[/yellow])")
-        print(f"\tAmount: [yellow]{format_amount(amount)} EGLD[/yellow]")
+        print(f"\tAmount: [yellow]{format_native_amount(amount)}[/yellow]")
 
-        all_transfers.append(Transfer(address, label, amount))
+        all_transfers.append(MyTransfer(address, label, TokenTransfer.new_from_native_amount(amount)))
 
-    total_amount = sum([item.amount for item in all_transfers])
-    ux.show_message(f"Total amount: {format_amount(total_amount)} EGLD")
+    total_amount = sum([item.token_transfer.amount for item in all_transfers])
+    ux.show_message(f"Total amount: {format_native_amount(total_amount)}")
 
-    json_content = json.dumps([item.to_dictionary() for item in all_transfers], indent=4)
+    json_content = json.dumps([item.to_dictionary(currency_provider) for item in all_transfers], indent=4)
     outfile_path.write_text(json_content)
 
     ux.show_message(f"File saved: {outfile_path}")

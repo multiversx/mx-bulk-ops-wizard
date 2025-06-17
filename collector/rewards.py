@@ -3,7 +3,7 @@ from typing import Any
 
 from multiversx_sdk import Address
 
-from collector.utils import format_amount, format_time
+from collector.utils import format_native_amount, format_time
 
 
 class RewardsType(str, Enum):
@@ -42,7 +42,7 @@ class ReceivedRewards:
             "timestamp": self.timestamp,
             "timestampFormatted": format_time(self.timestamp),
             "amount": self.amount,
-            "amountFormatted": f"{format_amount(self.amount, num_decimals=6)} EGLD"
+            "amountFormatted": f"{format_native_amount(self.amount)}"
         }
 
 
@@ -72,6 +72,6 @@ class ReceivedRewardsOfAccount:
             "address": self.address.to_bech32(),
             "label": self.label,
             "numRewards": num_rewards,
-            "totalAmountFormatted": f"{format_amount(total_amount, num_decimals=6)} EGLD",
+            "totalAmountFormatted": f"{format_native_amount(total_amount)}",
             "rewards": [item.to_dictionary() for item in self.rewards]
         }
