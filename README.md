@@ -112,6 +112,12 @@ PYTHONPATH=. python3 ./collector/prepare_transfers_of_rewards.py --threshold=1 -
 PYTHONPATH=. python3 ./collector/do_transfers.py --network=devnet --wallets=$WALLETS_CONFIG --infile=transfers.json --receiver=${RECEIVER} --auth=$AUTH_REGISTRATION
 ```
 
+## Prepare custom tokens to transfer
+
+```
+PYTHONPATH=. python3 ./collector/prepare_custom_tokens.py --network=devnet --wallets=$WALLETS_CONFIG --after-epoch=42 --threshold=0 --outfile=custom_transfers.json
+```
+
 ## Vote on governance
 
 ```

@@ -6,8 +6,8 @@ from multiversx_sdk import (AccountOnNetwork, Address, ApiNetworkProvider,
                             AwaitingOptions, Message, NativeAuthClient,
                             NativeAuthClientConfig, NetworkEntrypoint,
                             NetworkProviderConfig, NetworkProviderError,
-                            ProxyNetworkProvider, TokenTransfer, Transaction,
-                            TransactionOnNetwork)
+                            ProxyNetworkProvider, Token, TokenTransfer,
+                            Transaction, TransactionOnNetwork)
 from multiversx_sdk.abi import BigUIntValue, BytesValue, U64Value
 from rich import print
 
@@ -324,6 +324,33 @@ class MyEntrypoint:
         )
 
         return transaction
+
+    def get_custom_tokens(self, address: Address) -> list[Token]:
+        # For the moment, we ignore NFTs.
+        # We have to perform this GET, so that we can observe all MetaESDTs (all nonces) held by the account, as well.
+        # No way to do a request that supports filtering by identifier & collection, in one go.
+        data_esdt_and_meta: list[dict[str, Any]] = self.api_network_provider.do_get_generic(
+            f"accounts/{address.to_bech32()}/tokens", {
+                "from": 0,
+                "size": 10000,
+                "fields": "identifier,collection,nonce",
+                "includeMetaESDT": True
+            })
+
+        tokens: list[Token] = []
+
+        for item in data_esdt_and_meta:
+            collection = item.get("collection", "")
+            identifier = item.get("identifier", "")
+            nonce = int(item.get("nonce", 0))
+            tokens.append(Token(identifier if nonce == 0 else collection, nonce))
+
+        return tokens
+
+    def get_custom_token_balance(self, token: Token, address: Address, acquired_after_timestamp: Optional[int] = None) -> int:
+        # TODO: Handle "acquired_after_timestamp"
+        current_state = self.api_network_provider.get_token_of_account(address, token)
+        return current_state.amount
 
     def send_multiple(self, auth_app: AuthApp, wrappers: list[TransactionWrapper], chunk_size: int = DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS):
         print("Cosigning transactions, if necessary...")
