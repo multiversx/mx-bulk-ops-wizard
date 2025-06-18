@@ -19,7 +19,7 @@ from collector.constants import (
     ACCOUNT_AWAITING_POLLING_TIMEOUT_IN_MILLISECONDS,
     CONTRACT_RESULTS_CODE_OK_ENCODED, COSIGNER_SERVICE_ID,
     COSIGNER_SIGN_TRANSACTIONS_RETRY_DELAY_IN_SECONDS,
-    DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS,
+    DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS, MAX_NUM_CUSTOM_TOKENS_TO_FETCH,
     MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_CLAIM_REWARDS,
     MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_REWARDS, METACHAIN_ID,
     NETWORK_PROVIDER_NUM_RETRIES, NETWORK_PROVIDER_TIMEOUT_SECONDS,
@@ -325,16 +325,15 @@ class MyEntrypoint:
 
         return transaction
 
-    def get_custom_tokens(self, address: Address) -> list[Token]:
+    def get_custom_tokens(self, address: Address, identifier_or_collection: str) -> list[Token]:
         # For the moment, we ignore NFTs.
         # We have to perform this GET, so that we can observe all MetaESDTs (all nonces) held by the account, as well.
-        # No way to do a request that supports filtering by identifier & collection, in one go.
         data_esdt_and_meta: list[dict[str, Any]] = self.api_network_provider.do_get_generic(
             f"accounts/{address.to_bech32()}/tokens", {
                 "from": 0,
-                "size": 10000,
+                "size": MAX_NUM_CUSTOM_TOKENS_TO_FETCH,
                 "fields": "identifier,collection,nonce",
-                "includeMetaESDT": True
+                "includeMetaESDT": True,
             })
 
         tokens: list[Token] = []
@@ -343,7 +342,12 @@ class MyEntrypoint:
             collection = item.get("collection", "")
             identifier = item.get("identifier", "")
             nonce = int(item.get("nonce", 0))
-            tokens.append(Token(identifier if nonce == 0 else collection, nonce))
+            item_identifier_or_collection = identifier if nonce == 0 else collection
+
+            if item_identifier_or_collection != identifier_or_collection:
+                continue
+
+            tokens.append(Token(item_identifier_or_collection, nonce))
 
         return tokens
 

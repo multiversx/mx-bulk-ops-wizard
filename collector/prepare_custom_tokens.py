@@ -74,12 +74,9 @@ def _do_main(cli_args: list[str]):
 
         print(address.to_bech32(), f"([yellow]{account_wrapper.wallet_name}[/yellow])")
 
-        tokens = entrypoint.get_custom_tokens(address)
+        tokens = entrypoint.get_custom_tokens(address, token_identifier)
 
         for token in tokens:
-            if token.identifier != token_identifier:
-                continue
-
             print(f"\t([yellow]{token.identifier}, {token.nonce}[/yellow])")
             amount = entrypoint.get_custom_token_balance(token, address)
             all_transfers.append(MyTransfer(address, label, TokenTransfer(token, amount)))
