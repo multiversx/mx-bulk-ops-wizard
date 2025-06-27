@@ -374,9 +374,9 @@ class MyEntrypoint:
 
     def get_custom_token_balance_on_block_nonce(self, token: Token, address: Address, block_nonce: int) -> int:
         if token.nonce == 0:
-            response = self.deep_history_proxy_network_provider.do_get_generic(f"address/{address.to_bech32()}/esdt/{token.identifier}")
+            response = self.deep_history_proxy_network_provider.do_get_generic(f"address/{address.to_bech32()}/esdt/{token.identifier}?blockNonce={block_nonce}")
         else:
-            response = self.deep_history_proxy_network_provider.do_get_generic(f"address/{address.to_bech32()}/nft/{token.identifier}/nonce/{token.nonce}")
+            response = self.deep_history_proxy_network_provider.do_get_generic(f"address/{address.to_bech32()}/nft/{token.identifier}/nonce/{token.nonce}?blockNonce={block_nonce}")
 
         balance = response.get("balance", 0)
         return balance
