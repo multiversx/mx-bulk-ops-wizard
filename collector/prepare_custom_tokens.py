@@ -4,7 +4,7 @@ import traceback
 from argparse import ArgumentParser
 from pathlib import Path
 
-from multiversx_sdk import Token, TokenTransfer
+from multiversx_sdk import AddressComputer, TokenTransfer
 from rich import print
 
 from collector import errors, ux
@@ -32,7 +32,6 @@ def _do_main(cli_args: list[str]):
     parser.add_argument("--wallets", required=True, help="path of the wallets configuration file")
     parser.add_argument("--token", required=True, help="token identifier (without nonce in case of )")
     parser.add_argument("--after-epoch", type=int, default=0, help="consider tokens received after this epoch")
-    parser.add_argument("--after-time", type=int, default=0, help="consider tokens received after this timestamp")
     parser.add_argument("--threshold", type=int, default=0, help="transfer amounts larger than this amount")
     parser.add_argument("--outfile", required=True, help="where to save the prepared transfers")
     args = parser.parse_args(cli_args)
@@ -44,7 +43,6 @@ def _do_main(cli_args: list[str]):
     accounts_wrappers = load_accounts(Path(args.wallets))
     token_identifier = args.token
     after_epoch = args.after_epoch
-    after_time = args.after_time
     threshold = args.threshold
     outfile = args.outfile
 
@@ -54,16 +52,7 @@ def _do_main(cli_args: list[str]):
     if outfile_path.exists():
         raise UsageError("'output file' should not be an existing file")
 
-    is_time_missing = not after_epoch and not after_time
-    is_time_overconfigured = after_epoch and after_time
-    if is_time_missing or is_time_overconfigured:
-        raise UsageError("either 'after epoch' or 'after time' must be set")
-
-    if after_epoch:
-        after_time = entrypoint.get_start_of_epoch_timestamp(after_epoch)
-
     print(f"After epoch: [yellow]{after_epoch}[/yellow]")
-    print(f"After timestamp: [yellow]{after_time} ({format_time(after_time)})[/yellow]")
 
     all_transfers: list[MyTransfer] = []
 
@@ -71,14 +60,17 @@ def _do_main(cli_args: list[str]):
         account = account_wrapper.account
         address = account.address
         label = account_wrapper.wallet_name
+        shard = AddressComputer().get_shard_of_address(address)
 
         print(address.to_bech32(), f"([yellow]{account_wrapper.wallet_name}[/yellow])")
 
+        after_block_nonce = entrypoint.get_start_of_epoch_nonce(shard, after_epoch) if after_epoch else 0
         tokens = entrypoint.get_custom_tokens(address, token_identifier)
 
         for token in tokens:
             print(f"\t([yellow]{token.identifier}, {token.nonce}[/yellow])")
-            amount = entrypoint.get_custom_token_balance(token, address)
+
+            amount = entrypoint.get_custom_token_balance(token, address, after_block_nonce)
             all_transfers.append(MyTransfer(address, label, TokenTransfer(token, amount)))
 
     total_amount = sum([item.token_transfer.amount for item in all_transfers])

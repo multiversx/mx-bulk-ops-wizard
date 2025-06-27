@@ -56,6 +56,11 @@ class MyEntrypoint:
             config=NetworkProviderConfig(requests_options={"timeout": NETWORK_PROVIDER_TIMEOUT_SECONDS})
         )
 
+        self.deep_history_proxy_network_provider = ProxyNetworkProvider(
+            url=configuration.deep_history_url,
+            config=NetworkProviderConfig(requests_options={"timeout": NETWORK_PROVIDER_TIMEOUT_SECONDS})
+        )
+
         self.account_awaiting_options = AwaitingOptions(
             polling_interval_in_milliseconds=ACCOUNT_AWAITING_POLLING_TIMEOUT_IN_MILLISECONDS,
             patience_in_milliseconds=ACCOUNT_AWAITING_PATIENCE_IN_MILLISECONDS
@@ -80,6 +85,12 @@ class MyEntrypoint:
         data = self.proxy_network_provider.do_get_generic(url)
         timestamp = data.get("epochStart", {}).get("timestamp", 0)
         return timestamp
+
+    def get_start_of_epoch_nonce(self, shard: int, epoch: int) -> int:
+        url = f"network/epoch-start/{shard}/by-epoch/{epoch}"
+        data = self.proxy_network_provider.do_get_generic(url)
+        nonce = data.get("epochStart", {}).get("nonce", 0)
+        return nonce
 
     def get_claimable_rewards(self, delegator: Address) -> list[ClaimableRewards]:
         data_records = self.api_network_provider.do_get_generic(url=f"accounts/{delegator.to_bech32()}/delegation")
@@ -351,10 +362,24 @@ class MyEntrypoint:
 
         return tokens
 
-    def get_custom_token_balance(self, token: Token, address: Address, acquired_after_timestamp: Optional[int] = None) -> int:
-        # TODO: Handle "acquired_after_timestamp"
+    def get_custom_token_balance(self, token: Token, address: Address, block_nonce: int) -> int:
         current_state = self.api_network_provider.get_token_of_account(address, token)
-        return current_state.amount
+        current_balance = current_state.amount
+
+        if not block_nonce:
+            return current_state.amount
+
+        historical_balance = self.get_custom_token_balance_on_block_nonce(token, address, block_nonce)
+        return max(current_balance - historical_balance, 0)
+
+    def get_custom_token_balance_on_block_nonce(self, token: Token, address: Address, block_nonce: int) -> int:
+        if token.nonce == 0:
+            response = self.deep_history_proxy_network_provider.do_get_generic(f"address/{address.to_bech32()}/esdt/{token.identifier}")
+        else:
+            response = self.deep_history_proxy_network_provider.do_get_generic(f"address/{address.to_bech32()}/nft/{token.identifier}/nonce/{token.nonce}")
+
+        balance = response.get("balance", 0)
+        return balance
 
     def send_multiple(self, auth_app: AuthApp, wrappers: list[TransactionWrapper], chunk_size: int = DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS):
         print("Cosigning transactions, if necessary...")

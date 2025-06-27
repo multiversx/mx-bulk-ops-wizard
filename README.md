@@ -68,6 +68,7 @@ Custom URLs for API & Proxy, if default ones are not sufficient (for example, du
 ```
 export MAINNET_PROXY_URL="..."
 export MAINNET_API_URL="..."
+export MAINNET_DEEP_HISTORY_URL="..."
 ```
 
 Path towards the wallet configuration file (not handled internally, defined for example purposes):
@@ -115,7 +116,7 @@ PYTHONPATH=. python3 ./collector/do_transfers.py --network=devnet --wallets=$WAL
 ## Prepare custom tokens to transfer
 
 ```
-PYTHONPATH=. python3 ./collector/prepare_custom_tokens.py --network=devnet --wallets=$WALLETS_CONFIG --after-epoch=42 --threshold=0 --outfile=custom_transfers.json
+PYTHONPATH=. python3 ./collector/prepare_custom_tokens.py --token=WEGLD-a28c59 --network=devnet --wallets=$WALLETS_CONFIG --after-epoch=3932 --threshold=0 --outfile=custom_transfers.json
 ```
 
 ## Vote on governance
