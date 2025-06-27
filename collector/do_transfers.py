@@ -77,8 +77,8 @@ def _do_main(cli_args: list[str]):
 
     print("Total amounts:")
 
-    for key, value in amounts_by_token.items():
-        print(key, format_amount(currency_provider, value))
+    for token_identifier, value in amounts_by_token.items():
+        print(token_identifier, format_amount(currency_provider, value, token_identifier))
 
     ux.confirm_continuation(f"Ready to do transfers, by sending [green]{len(transactions_wrappers)}[/green] transactions?")
 

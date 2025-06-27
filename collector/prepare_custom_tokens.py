@@ -77,7 +77,7 @@ def _do_main(cli_args: list[str]):
             all_transfers.append(MyTransfer(address, label, TokenTransfer(token, amount)))
 
     total_amount = sum([item.token_transfer.amount for item in all_transfers])
-    ux.show_message(f"Total amount: {format_amount(currency_provider, total_amount)}")
+    ux.show_message(f"Total amount: {format_amount(currency_provider, total_amount, token_identifier)}")
 
     json_content = json.dumps([item.to_dictionary(currency_provider) for item in all_transfers], indent=4)
     outfile_path.write_text(json_content)
