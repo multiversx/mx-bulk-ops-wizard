@@ -71,6 +71,9 @@ def _do_main(cli_args: list[str]):
             print(f"\t([yellow]{token.identifier}, {token.nonce}[/yellow])")
 
             amount = entrypoint.get_custom_token_balance(token, address, after_block_nonce)
+            if amount < threshold:
+                continue
+
             all_transfers.append(MyTransfer(address, label, TokenTransfer(token, amount)))
 
     total_amount = sum([item.token_transfer.amount for item in all_transfers])
