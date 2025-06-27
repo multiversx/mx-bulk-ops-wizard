@@ -101,22 +101,20 @@ PYTHONPATH=. python3 ./collector/claim_rewards_legacy.py --network=devnet --wall
 PYTHONPATH=. python3 ./collector/collect_rewards.py --network=devnet --wallets=$WALLETS_CONFIG --after-epoch=3000 --outfile=rewards.json
 ```
 
-## Prepare amounts to transfer
+## Transfer rewards to an account
 
 ```
 PYTHONPATH=. python3 ./collector/prepare_transfers_of_rewards.py --threshold=1 --infile=rewards.json --outfile=transfers.json
-```
 
-## Transfer amounts to an account
-
-```
 PYTHONPATH=. python3 ./collector/do_transfers.py --network=devnet --wallets=$WALLETS_CONFIG --infile=transfers.json --receiver=${RECEIVER} --auth=$AUTH_REGISTRATION
 ```
 
-## Prepare custom tokens to transfer
+## Transfer custom tokens to an account
 
 ```
 PYTHONPATH=. python3 ./collector/prepare_custom_tokens.py --token=WEGLD-a28c59 --network=devnet --wallets=$WALLETS_CONFIG --after-epoch=0 --threshold=0 --outfile=custom_transfers.json
+
+PYTHONPATH=. python3 ./collector/do_transfers.py --network=devnet --wallets=$WALLETS_CONFIG --infile=custom_transfers.json --receiver=${RECEIVER} --auth=$AUTH_REGISTRATION
 ```
 
 ## Vote on governance
