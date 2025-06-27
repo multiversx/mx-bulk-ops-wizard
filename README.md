@@ -116,7 +116,7 @@ PYTHONPATH=. python3 ./collector/do_transfers.py --network=devnet --wallets=$WAL
 ## Prepare custom tokens to transfer
 
 ```
-PYTHONPATH=. python3 ./collector/prepare_custom_tokens.py --token=WEGLD-a28c59 --network=devnet --wallets=$WALLETS_CONFIG --after-epoch=3932 --threshold=0 --outfile=custom_transfers.json
+PYTHONPATH=. python3 ./collector/prepare_custom_tokens.py --token=WEGLD-a28c59 --network=devnet --wallets=$WALLETS_CONFIG --after-epoch=0 --threshold=0 --outfile=custom_transfers.json
 ```
 
 ## Vote on governance
