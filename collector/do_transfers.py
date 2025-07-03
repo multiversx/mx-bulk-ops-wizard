@@ -1,15 +1,18 @@
 import json
 import sys
+import time
 import traceback
 from argparse import ArgumentParser
 from pathlib import Path
 
 from multiversx_sdk import Address
 from rich import print
+from rich.rule import Rule
 
 from collector import errors, ux
 from collector.accounts import AccountWrapper, load_accounts
 from collector.configuration import CONFIGURATIONS
+from collector.constants import DELAY_TO_CAPTURE_ATTENTION_IN_SECONDS
 from collector.currencies import CurrencyProvider
 from collector.entrypoint import MyEntrypoint
 from collector.guardians import AuthApp
@@ -75,14 +78,27 @@ def _do_main(cli_args: list[str]):
 
         amounts_by_token[token_identifier] += transfer.token_transfer.amount
 
-    print("Total amounts:")
+    display_amounts(amounts_by_token, currency_provider)
+    ux.confirm_continuation(f"Ready to do transfers, by sending [green]{len(transactions_wrappers)}[/green] transactions?")
+
+    print(f"Safety mechanism: you'll be asked again to re-confirm the transfers in {DELAY_TO_CAPTURE_ATTENTION_IN_SECONDS} seconds, [red]please pay attention[/red]!")
+    time.sleep(DELAY_TO_CAPTURE_ATTENTION_IN_SECONDS)
+
+    print(Rule())
+    display_amounts(amounts_by_token, currency_provider)
+    print(f"Receiver is: [yellow]{receiver}[/yellow].")
+    print(Rule())
+
+    ux.confirm_continuation(f"[red]Proceed[/red] with the transfers?")
+
+    entrypoint.send_multiple(auth_app, transactions_wrappers)
+
+
+def display_amounts(amounts_by_token: dict[str, int], currency_provider: CurrencyProvider):
+    print("Amounts:")
 
     for token_identifier, value in amounts_by_token.items():
         print(token_identifier, format_amount(currency_provider, value, token_identifier))
-
-    ux.confirm_continuation(f"Ready to do transfers, by sending [green]{len(transactions_wrappers)}[/green] transactions?")
-
-    entrypoint.send_multiple(auth_app, transactions_wrappers)
 
 
 if __name__ == "__main__":
