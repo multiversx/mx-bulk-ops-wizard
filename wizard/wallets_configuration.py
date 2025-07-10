@@ -3,7 +3,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from collector.errors import BadConfigurationError
+from wizard.errors import BadConfigurationError
 
 
 class WalletsConfiguration:

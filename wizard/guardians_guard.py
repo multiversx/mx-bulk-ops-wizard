@@ -3,17 +3,16 @@ import traceback
 from argparse import ArgumentParser
 from pathlib import Path
 
-from multiversx_sdk import Address
 from rich import print
 from rich.prompt import Confirm
 from rich.rule import Rule
 
-from collector import errors, ux
-from collector.accounts import AccountWrapper, load_accounts
-from collector.configuration import CONFIGURATIONS
-from collector.entrypoint import MyEntrypoint
-from collector.guardians import AuthApp
-from collector.transactions import TransactionWrapper
+from wizard import errors, ux
+from wizard.accounts import AccountWrapper, load_accounts
+from wizard.configuration import CONFIGURATIONS
+from wizard.entrypoint import MyEntrypoint
+from wizard.guardians import AuthApp
+from wizard.transactions import TransactionWrapper
 
 
 def main(cli_args: list[str] = sys.argv[1:]):
@@ -43,10 +42,9 @@ def _do_main(cli_args: list[str]):
     }
 
     entrypoint.recall_nonces(accounts_wrappers)
-    entrypoint.recall_guardians(accounts_wrappers)
     transactions_wrappers: list[TransactionWrapper] = []
 
-    ux.show_message("Creating and signing 'set guardian' transactions for all auth registration entries...")
+    ux.show_message("Creating and signing 'guard account' transactions for all auth registration entries...")
 
     for entry in auth_app.get_all_entries():
         account_wrapper = accounts_wrappers_by_addresses.get(entry.get_address())
@@ -64,39 +62,23 @@ def _do_main(cli_args: list[str]):
 
         if guardian_data.is_guarded:
             print(f"... account is [blue]already guarded[/blue]")
-
-            if guardian_data.active_guardian == entry.get_guardian():
-                print(f"... active guardian is same as the one in the auth registration file")
-            else:
-                print(f"... active guardian [red]is not same[/red] as the one in the auth registration file (bad flow, please handle separately)")
-
-            print("... please see: https://docs.multiversx.com/developers/built-in-functions/#setguardian")
-
-            if not Confirm.ask("Re-set guardian (tricky, but might produce the expected results)?"):
+            if not Confirm.ask("Re-guard it?"):
                 continue
-        else:
-            print(f"... not yet guarded")
 
-        if guardian_data.pending_guardian:
-            print(f"... account has a [blue]pending[/blue] guardian = {guardian_data.pending_guardian}")
-
-            if guardian_data.pending_guardian == entry.get_guardian():
-                print(f"... pending guardian is same as the one in the auth registration file")
-            else:
-                print(f"... pending guardian [red]is not same[/red] as the one in the auth registration file (bad flow, please handle separately)")
-
-            print("... please see: https://docs.multiversx.com/developers/built-in-functions/#setguardian")
-
-            if not Confirm.ask("Re-set guardian (tricky flow, might not work as expected / no-op on chain)?"):
+        if not guardian_data.active_guardian:
+            print(f"... account has [red]no active guardian[/red]")
+            if not Confirm.ask("Attempt to guard (won't work)?"):
                 continue
-        else:
-            print(f"... no pending guardian")
 
-        guardian = Address.new_from_bech32(entry.get_guardian())
-        transaction = entrypoint.set_guardian(account_wrapper, guardian)
+        if entry.get_guardian() != guardian_data.active_guardian:
+            print(f"... registered guardian [red]does not match[/red] the active guardian")
+            if not Confirm.ask("Attempt to guard (please don't)?"):
+                continue
+
+        transaction = entrypoint.guard_account(account_wrapper)
         transactions_wrappers.append(TransactionWrapper(transaction, label))
 
-    ux.confirm_continuation(f"Ready to set guardians, by sending [green]{len(transactions_wrappers)}[/green] transactions?")
+    ux.confirm_continuation(f"Ready to guard accounts, by sending [green]{len(transactions_wrappers)}[/green] transactions?")
     entrypoint.send_multiple(auth_app, transactions_wrappers)
 
 

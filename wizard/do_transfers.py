@@ -9,16 +9,16 @@ from multiversx_sdk import Address
 from rich import print
 from rich.rule import Rule
 
-from collector import errors, ux
-from collector.accounts import AccountWrapper, load_accounts
-from collector.configuration import CONFIGURATIONS
-from collector.constants import DELAY_TO_CAPTURE_ATTENTION_IN_SECONDS
-from collector.currencies import CurrencyProvider
-from collector.entrypoint import MyEntrypoint
-from collector.guardians import AuthApp
-from collector.transactions import TransactionWrapper
-from collector.transfers import MyTransfer
-from collector.utils import format_amount
+from wizard import errors, ux
+from wizard.accounts import AccountWrapper, load_accounts
+from wizard.configuration import CONFIGURATIONS
+from wizard.constants import DELAY_TO_CAPTURE_ATTENTION_IN_SECONDS
+from wizard.currencies import CurrencyProvider
+from wizard.entrypoint import MyEntrypoint
+from wizard.guardians import AuthApp
+from wizard.transactions import TransactionWrapper
+from wizard.transfers import MyTransfer
+from wizard.utils import format_amount
 
 
 def main(cli_args: list[str] = sys.argv[1:]):

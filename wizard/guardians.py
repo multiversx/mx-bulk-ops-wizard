@@ -8,7 +8,7 @@ from multiversx_sdk import Transaction
 from rich import print
 from rich.prompt import Prompt
 
-from collector import errors, ux
+from wizard import errors
 
 
 class GuardianData:

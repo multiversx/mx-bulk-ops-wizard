@@ -5,8 +5,8 @@ from multiversx_sdk import ApiNetworkProvider, NetworkProviderConfig
 from multiversx_sdk.core.constants import \
     EGLD_IDENTIFIER_FOR_MULTI_ESDTNFT_TRANSFER
 
-from collector.configuration import Configuration
-from collector.constants import NETWORK_PROVIDER_TIMEOUT_SECONDS
+from wizard.configuration import Configuration
+from wizard.constants import NETWORK_PROVIDER_TIMEOUT_SECONDS
 
 
 class Currency:

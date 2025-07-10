@@ -1,6 +1,6 @@
 import time
 from multiprocessing.dummy import Pool
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 from multiversx_sdk import (AccountOnNetwork, Address, ApiNetworkProvider,
                             AwaitingOptions, Message, NativeAuthClient,
@@ -11,10 +11,10 @@ from multiversx_sdk import (AccountOnNetwork, Address, ApiNetworkProvider,
 from multiversx_sdk.abi import BigUIntValue, BytesValue, U64Value
 from rich import print
 
-from collector import ux
-from collector.accounts import AccountWrapper, IMyAccount
-from collector.configuration import Configuration
-from collector.constants import (
+from wizard import ux
+from wizard.accounts import AccountWrapper, IMyAccount
+from wizard.configuration import Configuration
+from wizard.constants import (
     ACCOUNT_AWAITING_PATIENCE_IN_MILLISECONDS,
     ACCOUNT_AWAITING_POLLING_TIMEOUT_IN_MILLISECONDS,
     CONTRACT_RESULTS_CODE_OK_ENCODED, COSIGNER_SERVICE_ID,
@@ -26,14 +26,14 @@ from collector.constants import (
     NETWORK_PROVIDERS_RETRY_DELAY_IN_SECONDS,
     NUM_PARALLEL_GET_GUARDIAN_DATA_REQUESTS, NUM_PARALLEL_GET_NONCE_REQUESTS,
     NUM_PARALLEL_GET_TRANSACTION_REQUESTS)
-from collector.currencies import is_native_currency
-from collector.errors import KnownError, TransientError
-from collector.guardians import (AuthApp, AuthRegistrationEntry,
-                                 CosignerClient, GuardianData)
-from collector.rewards import ClaimableRewards, ReceivedRewards, RewardsType
-from collector.timecache import TimeCache
-from collector.transactions import TransactionWrapper
-from collector.utils import split_to_chunks
+from wizard.currencies import is_native_currency
+from wizard.errors import KnownError, TransientError
+from wizard.guardians import (AuthApp, AuthRegistrationEntry, CosignerClient,
+                              GuardianData)
+from wizard.rewards import ClaimableRewards, ReceivedRewards, RewardsType
+from wizard.timecache import TimeCache
+from wizard.transactions import TransactionWrapper
+from wizard.utils import split_to_chunks
 
 
 class MyEntrypoint:

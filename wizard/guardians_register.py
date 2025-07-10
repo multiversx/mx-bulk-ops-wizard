@@ -8,11 +8,11 @@ from rich import print
 from rich.prompt import Confirm
 from rich.rule import Rule
 
-from collector import errors, ux
-from collector.accounts import load_accounts
-from collector.configuration import CONFIGURATIONS
-from collector.entrypoint import MyEntrypoint
-from collector.guardians import AuthApp
+from wizard import errors, ux
+from wizard.accounts import load_accounts
+from wizard.configuration import CONFIGURATIONS
+from wizard.entrypoint import MyEntrypoint
+from wizard.guardians import AuthApp
 
 
 def main(cli_args: list[str] = sys.argv[1:]):

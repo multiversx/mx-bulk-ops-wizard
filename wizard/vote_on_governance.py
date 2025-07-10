@@ -6,15 +6,15 @@ from pathlib import Path
 
 from rich import print
 
-from collector import errors, ux
-from collector.accounts import load_accounts
-from collector.configuration import CONFIGURATIONS
-from collector.constants import DEFAULT_GAS_PRICE
-from collector.entrypoint import MyEntrypoint
-from collector.governance import GovernanceRecord
-from collector.guardians import AuthApp
-from collector.transactions import TransactionWrapper
-from collector.utils import format_native_amount
+from wizard import errors, ux
+from wizard.accounts import load_accounts
+from wizard.configuration import CONFIGURATIONS
+from wizard.constants import DEFAULT_GAS_PRICE
+from wizard.entrypoint import MyEntrypoint
+from wizard.governance import GovernanceRecord
+from wizard.guardians import AuthApp
+from wizard.transactions import TransactionWrapper
+from wizard.utils import format_native_amount
 
 
 def main(cli_args: list[str] = sys.argv[1:]):

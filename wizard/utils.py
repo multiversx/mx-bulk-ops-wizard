@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Any, Protocol
 
-from collector.constants import ONE_QUINTILLION
+from wizard.constants import ONE_QUINTILLION
 
 
 class ICurrencyProvider(Protocol):

@@ -7,14 +7,14 @@ from pathlib import Path
 from multiversx_sdk import AddressComputer, TokenTransfer
 from rich import print
 
-from collector import errors, ux
-from collector.accounts import load_accounts
-from collector.configuration import CONFIGURATIONS
-from collector.currencies import CurrencyProvider
-from collector.entrypoint import MyEntrypoint
-from collector.errors import UsageError
-from collector.transfers import MyTransfer
-from collector.utils import format_amount, format_time
+from wizard import errors, ux
+from wizard.accounts import load_accounts
+from wizard.configuration import CONFIGURATIONS
+from wizard.currencies import CurrencyProvider
+from wizard.entrypoint import MyEntrypoint
+from wizard.errors import UsageError
+from wizard.transfers import MyTransfer
+from wizard.utils import format_amount, format_time
 
 
 def main(cli_args: list[str] = sys.argv[1:]):

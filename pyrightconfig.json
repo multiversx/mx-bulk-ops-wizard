@@ -1,5 +1,5 @@
 {
-    "include": ["collector"],
+    "include": ["wizard"],
     "exclude": ["**/__pycache__"],
     "ignore": [],
     "defineConstant": {

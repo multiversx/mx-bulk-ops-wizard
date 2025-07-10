@@ -3,7 +3,7 @@ from typing import Any
 
 from multiversx_sdk import Address
 
-from collector.utils import format_native_amount, format_time
+from wizard.utils import format_native_amount, format_time
 
 
 class RewardsType(str, Enum):

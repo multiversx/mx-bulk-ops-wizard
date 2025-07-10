@@ -4,14 +4,13 @@ from typing import Optional, Protocol
 from multiversx_sdk import Account, Address, LedgerAccount, Message
 from multiversx_sdk.core.interfaces import IAccount
 
-from collector import ux
-from collector.errors import BadConfigurationError, KnownError
-from collector.wallets_configuration import (KeystoresWalletEntry,
-                                             KeystoreWalletEntry,
-                                             LedgerWalletEntry,
-                                             MnemonicWalletEntry,
-                                             PEMWalletEntry, WalletEntry,
-                                             WalletsConfiguration)
+from wizard import ux
+from wizard.errors import BadConfigurationError, KnownError
+from wizard.wallets_configuration import (KeystoresWalletEntry,
+                                          KeystoreWalletEntry,
+                                          LedgerWalletEntry,
+                                          MnemonicWalletEntry, PEMWalletEntry,
+                                          WalletEntry, WalletsConfiguration)
 
 
 class IMyAccount(IAccount, Protocol):

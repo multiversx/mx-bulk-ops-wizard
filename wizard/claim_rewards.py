@@ -5,14 +5,14 @@ from pathlib import Path
 
 from rich import print
 
-from collector import errors, ux
-from collector.accounts import load_accounts
-from collector.configuration import CONFIGURATIONS
-from collector.constants import DEFAULT_GAS_PRICE
-from collector.entrypoint import MyEntrypoint
-from collector.guardians import AuthApp
-from collector.transactions import TransactionWrapper
-from collector.utils import format_native_amount
+from wizard import errors, ux
+from wizard.accounts import load_accounts
+from wizard.configuration import CONFIGURATIONS
+from wizard.constants import DEFAULT_GAS_PRICE
+from wizard.entrypoint import MyEntrypoint
+from wizard.guardians import AuthApp
+from wizard.transactions import TransactionWrapper
+from wizard.utils import format_native_amount
 
 
 def main(cli_args: list[str] = sys.argv[1:]):
@@ -52,16 +52,17 @@ def _do_main(cli_args: list[str]):
         address = account.address
         label = account_wrapper.wallet_name
 
-        print(address.to_bech32(), f"([yellow]{label}[/yellow])")
+        print(address.to_bech32(), f"([yellow]{account_wrapper.wallet_name}[/yellow])")
 
-        claimable_rewards = entrypoint.get_claimable_rewards_legacy(address)
+        claimable_rewards = entrypoint.get_claimable_rewards(address)
 
-        if claimable_rewards < threshold:
-            continue
+        for item in claimable_rewards:
+            if item.amount < threshold:
+                continue
 
-        print(f"\tClaim {format_native_amount(claimable_rewards)} from legacy delegation")
-        transaction = entrypoint.claim_rewards_legacy(account_wrapper, gas_price)
-        transactions_wrappers.append(TransactionWrapper(transaction, label))
+            print(f"\tClaim {format_native_amount(item.amount)} from {item.staking_provider.to_bech32()}")
+            transaction = entrypoint.claim_rewards(account_wrapper, item.staking_provider, gas_price)
+            transactions_wrappers.append(TransactionWrapper(transaction, label))
 
     ux.confirm_continuation(f"Ready to claim rewards, by sending [green]{len(transactions_wrappers)}[/green] transactions?")
     entrypoint.send_multiple(auth_app, transactions_wrappers)

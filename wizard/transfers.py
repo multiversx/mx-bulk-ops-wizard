@@ -4,7 +4,7 @@ from multiversx_sdk import Address, Token, TokenTransfer
 from multiversx_sdk.core.constants import \
     EGLD_IDENTIFIER_FOR_MULTI_ESDTNFT_TRANSFER
 
-from collector.utils import ICurrencyProvider, format_amount
+from wizard.utils import ICurrencyProvider, format_amount
 
 
 class MyTransfer:

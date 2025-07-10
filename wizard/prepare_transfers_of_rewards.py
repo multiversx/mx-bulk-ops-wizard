@@ -7,12 +7,12 @@ from pathlib import Path
 from multiversx_sdk import TokenTransfer
 from rich import print
 
-from collector import errors, ux
-from collector.currencies import OnlyNativeCurrencyProvider
-from collector.errors import UsageError
-from collector.rewards import ReceivedRewardsOfAccount
-from collector.transfers import MyTransfer
-from collector.utils import format_native_amount
+from wizard import errors, ux
+from wizard.currencies import OnlyNativeCurrencyProvider
+from wizard.errors import UsageError
+from wizard.rewards import ReceivedRewardsOfAccount
+from wizard.transfers import MyTransfer
+from wizard.utils import format_native_amount
 
 
 def main(cli_args: list[str] = sys.argv[1:]):
