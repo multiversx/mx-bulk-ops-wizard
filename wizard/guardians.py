@@ -203,9 +203,9 @@ class CosignerClient:
             transaction.guardian_signature = guardian_signature
 
     def _extract_response_payload(self, response: requests.Response) -> dict[str, Any]:
-        respose_content = response.json()
-        response_data = respose_content.get("data", {})
-        response_error = respose_content.get("error", "")
+        response_content = response.json()
+        response_data = response_content.get("data", {})
+        response_error = response_content.get("error", "")
 
         if response_error:
             raise errors.KnownError(response_error)

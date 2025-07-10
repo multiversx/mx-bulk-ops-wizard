@@ -98,7 +98,7 @@ PYTHONPATH=. python3 ./wizard/claim_rewards_legacy.py --network=devnet --wallets
 ## Summarize previously claimed (received) rewards
 
 ```
-PYTHONPATH=. python3 ./wizard/collect_rewards.py --network=devnet --wallets=$WALLETS_CONFIG --after-epoch=3000 --outfile=rewards.json
+PYTHONPATH=. python3 ./wizard/collect_rewards.py --network=devnet --wallets=$WALLETS_CONFIG --after-epoch=4000 --outfile=rewards.json
 ```
 
 ## Transfer rewards to an account

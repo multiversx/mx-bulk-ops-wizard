@@ -47,7 +47,7 @@ def _do_main(cli_args: list[str]):
     gas_price = args.gas_price
     auth_app = AuthApp.new_from_registration_file(Path(args.auth)) if args.auth else AuthApp([])
 
-    ux.confirm_continuation(f"You chose to vote on proposal =y [green]{proposal}[/green], with choice = [green]{choice}[/green]. Continue?")
+    ux.confirm_continuation(f"You chose to vote on proposal [green]{proposal}[/green], with choice = [green]{choice}[/green]. Continue?")
 
     ux.show_message("Loading proofs...")
 
@@ -72,7 +72,7 @@ def _do_main(cli_args: list[str]):
 
         print(address.to_bech32(), f"([yellow]{account_wrapper.wallet_name}[/yellow])")
 
-        if address.bech32() not in records_by_adresses:
+        if address.to_bech32() not in records_by_adresses:
             ux.show_warning("Not eligible for voting.")
             continue
 
