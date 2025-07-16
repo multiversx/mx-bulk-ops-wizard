@@ -25,7 +25,9 @@ from wizard.constants import (
     NETWORK_PROVIDER_NUM_RETRIES, NETWORK_PROVIDER_TIMEOUT_SECONDS,
     NETWORK_PROVIDERS_RETRY_DELAY_IN_SECONDS,
     NUM_PARALLEL_GET_GUARDIAN_DATA_REQUESTS, NUM_PARALLEL_GET_NONCE_REQUESTS,
-    NUM_PARALLEL_GET_TRANSACTION_REQUESTS)
+    NUM_PARALLEL_GET_TRANSACTION_REQUESTS,
+    TRANSACTION_AWAITING_PATIENCE_IN_MILLISECONDS,
+    TRANSACTION_AWAITING_POLLING_TIMEOUT_IN_MILLISECONDS)
 from wizard.currencies import is_native_currency
 from wizard.errors import KnownError, TransientError
 from wizard.guardians import (AuthApp, AuthRegistrationEntry, CosignerClient,
@@ -67,8 +69,8 @@ class MyEntrypoint:
         )
 
         self.transaction_awaiting_options = AwaitingOptions(
-            polling_interval_in_milliseconds=ACCOUNT_AWAITING_POLLING_TIMEOUT_IN_MILLISECONDS,
-            patience_in_milliseconds=ACCOUNT_AWAITING_PATIENCE_IN_MILLISECONDS
+            polling_interval_in_milliseconds=TRANSACTION_AWAITING_POLLING_TIMEOUT_IN_MILLISECONDS,
+            patience_in_milliseconds=TRANSACTION_AWAITING_PATIENCE_IN_MILLISECONDS
         )
 
         native_auth_config = NativeAuthClientConfig(
