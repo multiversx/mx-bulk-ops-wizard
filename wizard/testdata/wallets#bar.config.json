@@ -1,0 +1,14 @@
+[
+    {
+        "name": "mike",
+        "kind": "keystore",
+        "file": "~/mx-sdk-testwallets/users/mike.json",
+        "password": "password",
+        "addressIndices": []
+    },
+    {
+        "name": "judy",
+        "kind": "pem",
+        "file": "~/mx-sdk-testwallets/users/judy.pem"
+    }
+]

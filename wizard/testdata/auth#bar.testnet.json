@@ -1,0 +1,28 @@
+[
+    {
+        "context": {
+            "address": "erd1uv40ahysflse896x4ktnh6ecx43u7cmy9wnxnvcyp7deg299a4sq6vaywa",
+            "walletName": "mike",
+            "guardian": "erd1xhlhey3fxkq5f6rmqtnzcvvfkdthp0hau8ykaatu70rwg4nvzsdq4kjmed"
+        },
+        "issuer": "MultiversX",
+        "label": "mike",
+        "algorithm": "sha1",
+        "digits": 6,
+        "interval": 30,
+        "secret": "RWH7CFXF5JG7NCIDC2PBP2CCSXSF52YP"
+    },
+    {
+        "context": {
+            "address": "erd1fggp5ru0jhcjrp5rjqyqrnvhr3sz3v2e0fm3ktknvlg7mcyan54qzccnan",
+            "walletName": "judy",
+            "guardian": "erd1rnsv9ls8ltcqnhcl8vxwqftwd8ayt5ryhcfvecy7rmr7jdhd6xuq6ny0hz"
+        },
+        "issuer": "MultiversX",
+        "label": "judy",
+        "algorithm": "sha1",
+        "digits": 6,
+        "interval": 30,
+        "secret": "6NMXP4EKUDZXEMXVOTRISN37MUGPCMSG"
+    }
+]
