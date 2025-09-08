@@ -85,7 +85,7 @@ def _do_main(cli_args: List[str]):
     configuration = CONFIGURATIONS[network]
     entrypoint = MyEntrypoint(configuration)
 
-    proxy_url = getattr(configuration, "proxy", None)
+    proxy_url = getattr(configuration, "proxy", None) or getattr(configuration, "proxy_url", None)
     if not proxy_url:
         raise errors.KnownError("CONFIGURATION is missing 'proxy' URL.")
     provider = ProxyNetworkProvider(proxy_url)
