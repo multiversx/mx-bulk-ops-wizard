@@ -2,7 +2,7 @@ import sys
 import traceback
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Optional, List
+from typing import List
 
 from rich import print
 
@@ -19,6 +19,23 @@ from multiversx_sdk.core.transactions_factory_config import TransactionsFactoryC
 from multiversx_sdk.governance.governance_transactions_factory import GovernanceTransactionsFactory
 from multiversx_sdk.governance.resources import VoteType
 from multiversx_sdk.network_providers.proxy_network_provider import ProxyNetworkProvider
+
+
+def _addr_from_bech32(b: str) -> Address:
+    if hasattr(Address, "new_from_bech32"):
+        return Address.new_from_bech32(b)
+    if hasattr(Address, "from_bech32"):
+        return Address.from_bech32(b)
+    try:
+        return Address(b)
+    except Exception:
+        raise errors.KnownError("Address bech32 constructor not found in this SDK.")
+
+def _vote_enum(choice: str):
+    try:
+        return {"yes": VoteType.YES, "no": VoteType.NO, "abstain": VoteType.ABSTAIN}[choice]
+    except AttributeError:
+        return {"yes": getattr(VoteType, "yes"), "no": getattr(VoteType, "no"), "abstain": getattr(VoteType, "abstain")}[choice]
 
 
 def main(cli_args: list[str] = sys.argv[1:]):
@@ -68,17 +85,44 @@ def _do_main(cli_args: List[str]):
     configuration = CONFIGURATIONS[network]
     entrypoint = MyEntrypoint(configuration)
 
-    cfg = TransactionsFactoryConfig(
-        chain_id=configuration.chain_id,
-        min_gas_price=args.gas_price,
-        gas_limit_for_vote=getattr(configuration, "gas_limit_for_vote", 6_000_000),
-        gas_limit_for_proposal=getattr(configuration, "gas_limit_for_proposal", 12_000_000),
-        gas_limit_for_closing_proposal=getattr(configuration, "gas_limit_for_closing_proposal", 6_000_000),
-        gas_limit_for_clear_proposals=getattr(configuration, "gas_limit_for_clear_proposals", 6_000_000),
-        gas_limit_for_claim_accumulated_fees=getattr(configuration, "gas_limit_for_claim_accumulated_fees", 6_000_000),
-        gas_limit_for_change_config=getattr(configuration, "gas_limit_for_change_config", 12_000_000),
-    )
-    factory = GovernanceTransactionsFactory(cfg)
+    proxy_url = getattr(configuration, "proxy", None)
+    if not proxy_url:
+        raise errors.KnownError("CONFIGURATION is missing 'proxy' URL.")
+    provider = ProxyNetworkProvider(proxy_url)
+
+    chain_id = getattr(configuration, "chain_id", None)
+    if not chain_id:
+        netcfg = provider.get_network_config()
+        chain_id = getattr(netcfg, "chain_id", None)
+        if not chain_id:
+            raise errors.KnownError("Unable to resolve chain_id from provider network config.")
+
+    try:
+        cfg = TransactionsFactoryConfig(chain_id=chain_id, min_gas_price=args.gas_price)
+    except TypeError:
+        try:
+            cfg = TransactionsFactoryConfig(chain_id, args.gas_price)
+        except TypeError:
+            cfg = TransactionsFactoryConfig(chain_id)
+            if hasattr(cfg, "min_gas_price"):
+                cfg.min_gas_price = args.gas_price
+
+    optional_limits = {
+        "gas_limit_for_vote": getattr(configuration, "gas_limit_for_vote", 6_000_000),
+        "gas_limit_for_proposal": getattr(configuration, "gas_limit_for_proposal", 12_000_000),
+        "gas_limit_for_closing_proposal": getattr(configuration, "gas_limit_for_closing_proposal", 6_000_000),
+        "gas_limit_for_clear_proposals": getattr(configuration, "gas_limit_for_clear_proposals", 6_000_000),
+        "gas_limit_for_claim_accumulated_fees": getattr(configuration, "gas_limit_for_claim_accumulated_fees", 6_000_000),
+        "gas_limit_for_change_config": getattr(configuration, "gas_limit_for_change_config", 12_000_000),
+    }
+    for attr, val in optional_limits.items():
+        if hasattr(cfg, attr):
+            setattr(cfg, attr, val)
+
+    try:
+        factory = GovernanceTransactionsFactory(config=cfg)
+    except TypeError:
+        factory = GovernanceTransactionsFactory(cfg)
 
     accounts_wrappers = load_accounts(Path(args.wallets))
     auth_app = AuthApp.new_from_registration_file(Path(args.auth)) if args.auth else AuthApp([])
@@ -90,10 +134,10 @@ def _do_main(cli_args: List[str]):
 
     if args.action == "vote":
         proposal = args.proposal
-        vote = {"yes": VoteType.YES, "no": VoteType.NO, "abstain": VoteType.ABSTAIN}[args.choice]
+        vote = _vote_enum(args.choice)
 
         ux.confirm_continuation(
-            f"Vote bulk pe propunerea [green]{proposal}[/green] cu alegerea [green]{args.choice.upper()}[/green]?"
+            f"Submit bulk votes on proposal [green]{proposal}[/green] with choice [green]{args.choice.upper()}[/green]?"
         )
         for aw in accounts_wrappers:
             tx = factory.create_transaction_for_voting(
@@ -117,7 +161,7 @@ def _do_main(cli_args: List[str]):
         value = int(round(args.fee_egld * 10**18)) if hasattr(args, "fee_egld") else 0
         aw = accounts_wrappers[0]
         ux.confirm_continuation(
-            f"Creating proposal with commit {args.commit_hash},"
+            f"Creating proposal with commit {args.commit_hash}, "
             f"epochs {args.start_epoch}→{args.end_epoch}, "
             f"value {args.fee_egld} EGLD. Continue?"
         )
@@ -131,7 +175,7 @@ def _do_main(cli_args: List[str]):
         transactions_wrappers.append(TransactionWrapper(tx, aw.wallet_name))
 
     elif args.action == "clear":
-        proposers = [Address.new_from_bech32(b) for b in args.proposers]
+        proposers = [_addr_from_bech32(b) for b in args.proposers]
         ux.confirm_continuation(f"Clear ended proposals for [green]{len(proposers)}[/green] proposer(s)?")
         aw = accounts_wrappers[0]
         tx = factory.create_transaction_for_clearing_ended_proposals(
@@ -165,7 +209,7 @@ def _do_main(cli_args: List[str]):
         transactions_wrappers.append(TransactionWrapper(tx, aw.wallet_name))
 
     else:
-        raise errors.KnownError("Acțiune necunoscută")
+        raise errors.KnownError("Unknown action")
 
     ux.confirm_continuation(f"Ready to send [green]{len(transactions_wrappers)}[/green] transaction(s)?")
     entrypoint.send_multiple(auth_app, transactions_wrappers)
