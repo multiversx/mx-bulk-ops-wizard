@@ -24,12 +24,7 @@ from multiversx_sdk.network_providers.proxy_network_provider import ProxyNetwork
 def _addr_from_bech32(b: str) -> Address:
     if hasattr(Address, "new_from_bech32"):
         return Address.new_from_bech32(b)
-    if hasattr(Address, "from_bech32"):
-        return Address.from_bech32(b)
-    try:
-        return Address(b)
-    except Exception:
-        raise errors.KnownError("Address bech32 constructor not found in this SDK.")
+    raise errors.KnownError("This SDK requires Address.new_from_bech32.")
 
 def _vote_enum(choice: str):
     try:
@@ -97,15 +92,7 @@ def _do_main(cli_args: List[str]):
         if not chain_id:
             raise errors.KnownError("Unable to resolve chain_id from provider network config.")
 
-    try:
-        cfg = TransactionsFactoryConfig(chain_id=chain_id, min_gas_price=args.gas_price)
-    except TypeError:
-        try:
-            cfg = TransactionsFactoryConfig(chain_id, args.gas_price)
-        except TypeError:
-            cfg = TransactionsFactoryConfig(chain_id)
-            if hasattr(cfg, "min_gas_price"):
-                cfg.min_gas_price = args.gas_price
+    cfg = TransactionsFactoryConfig(chain_id=chain_id)
 
     optional_limits = {
         "gas_limit_for_vote": getattr(configuration, "gas_limit_for_vote", 6_000_000),
@@ -115,6 +102,7 @@ def _do_main(cli_args: List[str]):
         "gas_limit_for_claim_accumulated_fees": getattr(configuration, "gas_limit_for_claim_accumulated_fees", 6_000_000),
         "gas_limit_for_change_config": getattr(configuration, "gas_limit_for_change_config", 12_000_000),
     }
+
     for attr, val in optional_limits.items():
         if hasattr(cfg, attr):
             setattr(cfg, attr, val)
