@@ -1,5 +1,4 @@
 from functools import cache
-from typing import Any
 
 from multiversx_sdk import ApiNetworkProvider, NetworkProviderConfig
 from multiversx_sdk.core.constants import \
