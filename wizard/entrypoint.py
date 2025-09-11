@@ -1,13 +1,13 @@
 import time
 from multiprocessing.dummy import Pool
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 from multiversx_sdk import (AccountOnNetwork, Address, ApiNetworkProvider,
                             AwaitingOptions, Message, NativeAuthClient,
                             NativeAuthClientConfig, NetworkEntrypoint,
                             NetworkProviderConfig, NetworkProviderError,
                             ProxyNetworkProvider, Token, TokenTransfer,
-                            Transaction, TransactionOnNetwork)
+                            Transaction, TransactionOnNetwork, VoteType)
 from multiversx_sdk.abi import BigUIntValue, BytesValue, U64Value
 from rich import print
 
@@ -39,13 +39,20 @@ from wizard.utils import split_to_chunks
 
 
 class MyEntrypoint:
-    def __init__(self, configuration: Configuration) -> None:
+    def __init__(
+        self,
+        configuration: Configuration,
+        use_gas_estimator: Optional[bool] = None,
+        gas_limit_multiplier: Optional[float] = None
+        ) -> None:
         self.configuration = configuration
 
         self.network_entrypoint = NetworkEntrypoint(
             network_provider_url=configuration.proxy_url,
             network_provider_kind="proxy",
             chain_id=configuration.chain_id,
+            with_gas_limit_estimator=use_gas_estimator,
+            gas_limit_multiplier=gas_limit_multiplier
         )
 
         self.api_network_provider = ApiNetworkProvider(
@@ -277,6 +284,17 @@ class MyEntrypoint:
         )
 
         return transaction
+
+    def vote_on_onchain_governance(self, sender: AccountWrapper, proposal: int, vote: VoteType, gas_price: int) -> Transaction:
+        controller = self.network_entrypoint.create_governance_controller()
+        return controller.create_transaction_for_voting(
+            sender=sender.account,
+            nonce=sender.account.get_nonce_then_increment(),
+            proposal_nonce=proposal,
+            vote=vote,
+            gas_price=gas_price,
+            guardian=sender.guardian,
+        )
 
     def get_guardian_data(self, address: Address):
         response = self.proxy_network_provider.do_get_generic(f"address/{address.to_bech32()}/guardian-data")
