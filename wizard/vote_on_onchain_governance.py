@@ -4,6 +4,10 @@ from argparse import ArgumentParser
 from pathlib import Path
 from typing import List
 
+from multiversx_sdk import VoteType
+from multiversx_sdk.gas_estimator.errors import GasLimitEstimationError
+from rich import print
+
 from wizard import errors, ux
 from wizard.accounts import load_accounts
 from wizard.configuration import CONFIGURATIONS
@@ -12,7 +16,6 @@ from wizard.entrypoint import MyEntrypoint
 from wizard.guardians import AuthApp
 from wizard.transactions import TransactionWrapper
 
-from multiversx_sdk import VoteType
 
 def get_vote_type_from_args(choice: str) -> VoteType:
     return {
@@ -30,6 +33,7 @@ def main(cli_args: list[str] = sys.argv[1:]):
         ux.show_critical_error(traceback.format_exc())
         ux.show_critical_error(err.get_pretty())
         return 1
+
 
 def _do_main(cli_args: List[str]):
     parser = ArgumentParser()
@@ -67,13 +71,17 @@ def _do_main(cli_args: List[str]):
     )
 
     for account in accounts_wrappers:
-        tx = entrypoint.vote_on_onchain_governance(
-            sender=account,
-            proposal=proposal,
-            vote=vote,
-            gas_price=gas_price,
-        )
-        transactions_wrappers.append(TransactionWrapper(tx, account.wallet_name))
+        try:
+            tx = entrypoint.vote_on_onchain_governance(
+                sender=account,
+                proposal=proposal,
+                vote=vote,
+                gas_price=gas_price,
+            )
+
+            transactions_wrappers.append(TransactionWrapper(tx, account.wallet_name))
+        except GasLimitEstimationError as error:
+            print(f"[yellow]{account.wallet_name}[/yellow]", account.account.address.to_bech32(), f"[red]{error.error}[/red]")
 
     ux.confirm_continuation(f"Ready to send [green]{len(transactions_wrappers)}[/green] transaction(s)?")
     entrypoint.send_multiple(auth_app, transactions_wrappers)

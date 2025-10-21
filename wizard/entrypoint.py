@@ -44,7 +44,7 @@ class MyEntrypoint:
         configuration: Configuration,
         use_gas_estimator: Optional[bool] = None,
         gas_limit_multiplier: Optional[float] = None
-        ) -> None:
+    ) -> None:
         self.configuration = configuration
 
         self.network_entrypoint = NetworkEntrypoint(
