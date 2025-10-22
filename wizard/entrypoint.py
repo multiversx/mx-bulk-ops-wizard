@@ -376,6 +376,46 @@ class MyEntrypoint:
 
         return votes
 
+    def get_onchain_delegated_votes(self, proposal: int, contract: str) -> dict[str, list[OnChainVote]]:
+        size = MAX_NUM_EVENTS_TO_FETCH
+        reasonably_recent_timestamp = int((datetime.now(timezone.utc) - timedelta(days=10)).timestamp())
+
+        events: list[dict[str, Any]] = self.api_network_provider.do_get_generic(
+            f"events", {
+                "from": 0,
+                "size": size,
+                "identifier": "delegateVote",
+                "address": contract,
+                "after": reasonably_recent_timestamp
+            })
+
+        if len(events) == size:
+            print(f"\tRetrieved {size} events. [red]There could be more![/red]")
+
+        votes: list[OnChainVote] = []
+        votes_by_voter: dict[str, list[OnChainVote]] = {}
+
+        for event in events:
+            topics = event.get("topics", [])
+
+            event_proposal_hex = topics[0]
+            event_proposal = int(event_proposal_hex, 16)
+            event_vote_type_hex = topics[1]
+            event_vote_type = VoteType(bytes.fromhex(event_vote_type_hex).decode())
+            event_voter = Address.new_from_hex(topics[2])
+            event_timestamp = event.get("timestamp", 0)
+
+            if event_proposal != proposal:
+                continue
+
+            vote = OnChainVote(event_voter.to_bech32(), proposal, contract, event_timestamp, event_vote_type)
+            votes.append(vote)
+
+        for vote in votes:
+            votes_by_voter.setdefault(vote.voter, []).append(vote)
+
+        return votes_by_voter
+
     def get_guardian_data(self, address: Address):
         response = self.proxy_network_provider.do_get_generic(f"address/{address.to_bech32()}/guardian-data")
         response_payload = response.get("guardianData", {})

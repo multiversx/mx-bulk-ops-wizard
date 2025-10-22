@@ -14,6 +14,7 @@ from wizard.constants import DEFAULT_GAS_PRICE
 from wizard.entrypoint import MyEntrypoint
 from wizard.guardians import AuthApp
 from wizard.transactions import TransactionWrapper
+from wizard.utils import format_time
 
 
 def get_vote_type_from_args(choice: str) -> VoteType:
@@ -69,15 +70,28 @@ def _do_main(cli_args: List[str]):
         f"Submit bulk votes on proposal [green]{proposal}[/green] with choice [green]{vote.value.upper()}[/green]?"
     )
 
-    for account_wrapper in accounts_wrappers:
-        print(f"[yellow]{account_wrapper.wallet_name}[/yellow]", account_wrapper.account.address.to_bech32())
+    previous_votes_by_voter = entrypoint.get_onchain_delegated_votes(proposal, configuration.legacy_delegation_contract)
 
-        voting_power = entrypoint.get_voting_power_via_legacy_delegation(account_wrapper.account.address)
+    for account_wrapper in accounts_wrappers:
+        address = account_wrapper.account.address
+
+        print(f"[yellow]{account_wrapper.wallet_name}[/yellow]", address.to_bech32())
+
+        voting_power = entrypoint.get_voting_power_via_legacy_delegation(address)
         if not voting_power:
             print(f"\t[red]has no voting power[/red]")
             continue
 
         print(f"\t[blue]has voting power[/blue]", voting_power)
+
+        previous_votes = previous_votes_by_voter.get(address.to_bech32(), [])
+
+        for previous_vote in previous_votes:
+            print(f"\tprevious vote at {format_time(previous_vote.timestamp)}:", previous_vote.vote_type)
+
+        if previous_votes:
+            print(f"\t[red]has already voted![/red]")
+            continue
 
         tx = entrypoint.vote_via_legacy_delegation(
             sender=account_wrapper,
