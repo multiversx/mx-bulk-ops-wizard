@@ -136,6 +136,12 @@ PYTHONPATH=. python3 ./wizard/vote_on_onchain_governance.py --network=devnet --w
 PYTHONPATH=. python3 ./wizard/vote_via_legacy_delegation.py --network=devnet --wallets=$WALLETS_CONFIG --proposal <proposal nonce> --vote yes --auth=$AUTH_REGISTRATION 
 ```
 
+## Simple report on governance (voting)
+
+```
+PYTHONPATH=. python3 ./wizard/report_governance.py --network=devnet --wallets=$WALLETS_CONFIG --proposal <proposal nonce> 
+```
+
 ## Guardians
 
 For the examples below, we'll consider:
