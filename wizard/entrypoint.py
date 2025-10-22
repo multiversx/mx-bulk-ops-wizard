@@ -8,7 +8,8 @@ from multiversx_sdk import (AccountOnNetwork, Address, ApiNetworkProvider,
                             NetworkProviderConfig, NetworkProviderError,
                             ProxyNetworkProvider, Token, TokenTransfer,
                             Transaction, TransactionOnNetwork, VoteType)
-from multiversx_sdk.abi import BigUIntValue, BytesValue, U64Value
+from multiversx_sdk.abi import (AddressValue, BigUIntValue, BytesValue,
+                                StringValue, U64Value)
 from rich import print
 
 from wizard import ux
@@ -117,6 +118,20 @@ class MyEntrypoint:
         data = self.api_network_provider.do_get_generic(url=f"accounts/{delegator.to_bech32()}/delegation-legacy")
         amount = data.get("claimableRewards", 0)
         return int(amount)
+
+    def has_voting_power_in_legacy_delegation(self, voter: Address) -> int:
+        legacy_delegation_contract = Address.new_from_bech32(self.configuration.legacy_delegation_contract)
+
+        controller = self.network_entrypoint.create_smart_contract_controller()
+        [power_encoded] = controller.query(
+            contract=legacy_delegation_contract,
+            function="getVotingPower",
+            arguments=[AddressValue.new_from_address(voter)],
+        )
+
+        power = BigUIntValue()
+        power.decode_top_level(power_encoded)
+        return power.value
 
     def recall_nonces(self, accounts_wrappers: list[AccountWrapper]):
         def recall_nonce(wrapper: AccountWrapper):
@@ -295,6 +310,24 @@ class MyEntrypoint:
             gas_price=gas_price,
             guardian=sender.guardian,
         )
+
+    def vote_via_legacy_delegation(self, sender: AccountWrapper, proposal: int, vote: VoteType, gas_price: int):
+        legacy_delegation_contract = Address.new_from_bech32(self.configuration.legacy_delegation_contract)
+
+        controller = self.network_entrypoint.create_smart_contract_controller()
+        transaction = controller.create_transaction_for_execute(
+            sender=sender.account,
+            nonce=sender.account.get_nonce_then_increment(),
+            contract=legacy_delegation_contract,
+            function="delegateVote",
+            arguments=[U64Value(proposal), StringValue(vote.value)],
+            # Gas estimator might not work, thus we hard-code a value here.
+            gas_limit=80_000_000,
+            gas_price=gas_price,
+            guardian=sender.guardian
+        )
+
+        return transaction
 
     def get_guardian_data(self, address: Address):
         response = self.proxy_network_provider.do_get_generic(f"address/{address.to_bech32()}/guardian-data")
