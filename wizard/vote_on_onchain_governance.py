@@ -85,7 +85,7 @@ def _do_main(cli_args: List[str]):
 
             print(f"\t[blue]has voting power[/blue]", voting_power)
 
-            previous_votes = entrypoint.get_onchain_votes(address, proposal, configuration.system_governance_contract)
+            previous_votes = entrypoint.get_onchain_direct_votes(address, proposal)
 
             for previous_vote in previous_votes:
                 print(f"\tprevious vote at {format_time(previous_vote.timestamp)}:", previous_vote.vote_type)

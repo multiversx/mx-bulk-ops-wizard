@@ -337,8 +337,9 @@ class MyEntrypoint:
 
         return transaction
 
-    def get_onchain_votes(self, voter: Address, proposal: int, contract: str) -> list[OnChainVote]:
-        reasonably_recent_timestamp = int((datetime.now(timezone.utc) - timedelta(days=30)).timestamp())
+    def get_onchain_direct_votes(self, voter: Address, proposal: int) -> list[OnChainVote]:
+        contract = self.configuration.system_governance_contract
+        reasonably_recent_timestamp = int((datetime.now(timezone.utc) - timedelta(days=10)).timestamp())
 
         events: list[dict[str, Any]] = self.api_network_provider.do_get_generic(
             f"events", {
@@ -366,7 +367,7 @@ class MyEntrypoint:
             if event_log_address != contract:
                 continue
 
-            vote = OnChainVote(proposal, contract, event_timestamp, event_vote_type)
+            vote = OnChainVote(voter.to_bech32(), proposal, contract, event_timestamp, event_vote_type)
             votes.append(vote)
 
         return votes
