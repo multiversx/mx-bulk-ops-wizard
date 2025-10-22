@@ -120,7 +120,7 @@ PYTHONPATH=. python3 ./wizard/do_transfers.py --network=devnet --wallets=$WALLET
 ## Governance: direct vote
 
 ```
-PYTHONPATH=. python3 ./wizard/vote_on_onchain_governance.py --network=devnet --wallets=$WALLETS_CONFIG --proposal <proposal nonce> --vote yes --auth=$AUTH_REGISTRATION
+PYTHONPATH=. python3 ./wizard/vote_directly.py --network=devnet --wallets=$WALLETS_CONFIG --proposal <proposal nonce> --vote yes --auth=$AUTH_REGISTRATION
 ```
 
 ## Governance: delegated vote (via legacy delegation)
@@ -138,7 +138,7 @@ PYTHONPATH=. python3 ./wizard/vote_via_legacy_delegation.py --network=devnet --w
 ## Simple report on governance (voting)
 
 ```
-PYTHONPATH=. python3 ./wizard/report_governance.py --network=devnet --wallets=$WALLETS_CONFIG --proposal <proposal nonce> 
+PYTHONPATH=. python3 ./wizard/voting_report.py --network=devnet --wallets=$WALLETS_CONFIG --proposal <proposal nonce> 
 ```
 
 ## Guardians
