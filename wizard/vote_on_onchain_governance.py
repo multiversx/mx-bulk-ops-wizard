@@ -6,6 +6,7 @@ from typing import List
 
 from multiversx_sdk import VoteType
 from multiversx_sdk.gas_estimator.errors import GasLimitEstimationError
+from multiversx_sdk.smart_contracts.errors import SmartContractQueryError
 from rich import print
 
 from wizard import errors, ux
@@ -73,14 +74,14 @@ def _do_main(cli_args: List[str]):
     for account_wrapper in accounts_wrappers:
         print(f"[yellow]{account_wrapper.wallet_name}[/yellow]", account_wrapper.account.address.to_bech32())
 
-        voting_power = entrypoint.get_voting_power_via_legacy_delegation(account_wrapper.account.address)
-        if not voting_power:
-            print(f"\t[red]has no voting power[/red]")
-            continue
-
-        print(f"\t[blue]has voting power[/blue]", voting_power)
-
         try:
+            voting_power = entrypoint.get_voting_power_on_onchain_governance(account_wrapper.account.address)
+            if not voting_power:
+                print(f"\t[red]has no voting power[/red]")
+                continue
+
+            print(f"\t[blue]has voting power[/blue]", voting_power)
+
             tx = entrypoint.vote_on_onchain_governance(
                 sender=account_wrapper,
                 proposal=proposal,
@@ -89,6 +90,8 @@ def _do_main(cli_args: List[str]):
             )
 
             transactions_wrappers.append(TransactionWrapper(tx, account_wrapper.wallet_name))
+        except SmartContractQueryError as error:
+            print(f"\t[red]{error}[/red]")
         except GasLimitEstimationError as error:
             print(f"\t[red]{error.error}[/red]")
 

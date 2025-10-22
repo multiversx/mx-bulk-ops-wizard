@@ -119,20 +119,6 @@ class MyEntrypoint:
         amount = data.get("claimableRewards", 0)
         return int(amount)
 
-    def has_voting_power_in_legacy_delegation(self, voter: Address) -> int:
-        legacy_delegation_contract = Address.new_from_bech32(self.configuration.legacy_delegation_contract)
-
-        controller = self.network_entrypoint.create_smart_contract_controller()
-        [power_encoded] = controller.query(
-            contract=legacy_delegation_contract,
-            function="getVotingPower",
-            arguments=[AddressValue.new_from_address(voter)],
-        )
-
-        power = BigUIntValue()
-        power.decode_top_level(power_encoded)
-        return power.value
-
     def recall_nonces(self, accounts_wrappers: list[AccountWrapper]):
         def recall_nonce(wrapper: AccountWrapper):
             wrapper.account.nonce = self.network_entrypoint.recall_account_nonce(wrapper.account.address)
@@ -300,8 +286,13 @@ class MyEntrypoint:
 
         return transaction
 
+    def get_voting_power_on_onchain_governance(self, voter: Address):
+        controller = self.network_entrypoint.create_governance_controller()
+        return controller.get_voting_power(voter)
+
     def vote_on_onchain_governance(self, sender: AccountWrapper, proposal: int, vote: VoteType, gas_price: int) -> Transaction:
         controller = self.network_entrypoint.create_governance_controller()
+
         return controller.create_transaction_for_voting(
             sender=sender.account,
             nonce=sender.account.get_nonce_then_increment(),
@@ -310,6 +301,20 @@ class MyEntrypoint:
             gas_price=gas_price,
             guardian=sender.guardian,
         )
+
+    def get_voting_power_via_legacy_delegation(self, voter: Address) -> int:
+        legacy_delegation_contract = Address.new_from_bech32(self.configuration.legacy_delegation_contract)
+
+        controller = self.network_entrypoint.create_smart_contract_controller()
+        [power_encoded] = controller.query(
+            contract=legacy_delegation_contract,
+            function="getVotingPower",
+            arguments=[AddressValue.new_from_address(voter)],
+        )
+
+        power = BigUIntValue()
+        power.decode_top_level(power_encoded)
+        return power.value
 
     def vote_via_legacy_delegation(self, sender: AccountWrapper, proposal: int, vote: VoteType, gas_price: int):
         legacy_delegation_contract = Address.new_from_bech32(self.configuration.legacy_delegation_contract)
