@@ -70,12 +70,14 @@ def _do_main(cli_args: List[str]):
     )
 
     for account_wrapper in accounts_wrappers:
-        voting_power = entrypoint.has_voting_power_in_legacy_delegation(account_wrapper.account.address)
+        print(f"[yellow]{account_wrapper.wallet_name}[/yellow]", account_wrapper.account.address.to_bech32())
+
+        voting_power = entrypoint.get_voting_power_via_legacy_delegation(account_wrapper.account.address)
         if not voting_power:
-            print(f"[yellow]{account_wrapper.wallet_name}[/yellow]", account_wrapper.account.address.to_bech32(), f"[red]has no voting power[/red]")
+            print(f"\t[red]has no voting power[/red]")
             continue
 
-        print(f"[yellow]{account_wrapper.wallet_name}[/yellow]", account_wrapper.account.address.to_bech32(), f"[blue]has voting power[/blue]", voting_power)
+        print(f"\t[blue]has voting power[/blue]", voting_power)
 
         tx = entrypoint.vote_via_legacy_delegation(
             sender=account_wrapper,
