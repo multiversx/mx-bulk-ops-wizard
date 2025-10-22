@@ -330,7 +330,7 @@ class MyEntrypoint:
             function="delegateVote",
             arguments=[U64Value(proposal), StringValue(vote.value)],
             # Gas estimator might not work, thus we hard-code a value here.
-            gas_limit=80_000_000,
+            gas_limit=75_000_000,
             gas_price=gas_price,
             guardian=sender.guardian
         )
