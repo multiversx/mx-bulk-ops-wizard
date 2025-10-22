@@ -71,6 +71,15 @@ def _do_main(cli_args: List[str]):
     )
 
     for account_wrapper in accounts_wrappers:
+        print(f"[yellow]{account_wrapper.wallet_name}[/yellow]", account_wrapper.account.address.to_bech32())
+
+        voting_power = entrypoint.get_voting_power_via_legacy_delegation(account_wrapper.account.address)
+        if not voting_power:
+            print(f"\t[red]has no voting power[/red]")
+            continue
+
+        print(f"\t[blue]has voting power[/blue]", voting_power)
+
         try:
             tx = entrypoint.vote_on_onchain_governance(
                 sender=account_wrapper,
@@ -81,7 +90,7 @@ def _do_main(cli_args: List[str]):
 
             transactions_wrappers.append(TransactionWrapper(tx, account_wrapper.wallet_name))
         except GasLimitEstimationError as error:
-            print(f"[yellow]{account_wrapper.wallet_name}[/yellow]", account_wrapper.account.address.to_bech32(), f"[red]{error.error}[/red]")
+            print(f"\t[red]{error.error}[/red]")
 
     ux.confirm_continuation(f"Ready to send [green]{len(transactions_wrappers)}[/green] transaction(s)?")
     entrypoint.send_multiple(auth_app, transactions_wrappers)
