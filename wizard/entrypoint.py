@@ -338,17 +338,21 @@ class MyEntrypoint:
         return transaction
 
     def get_onchain_direct_votes(self, voter: Address, proposal: int) -> list[OnChainVote]:
-        contract = self.configuration.system_governance_contract
+        size = MAX_NUM_EVENTS_TO_FETCH
         reasonably_recent_timestamp = int((datetime.now(timezone.utc) - timedelta(days=10)).timestamp())
+        contract = self.configuration.system_governance_contract
 
         events: list[dict[str, Any]] = self.api_network_provider.do_get_generic(
             f"events", {
                 "from": 0,
-                "size": MAX_NUM_EVENTS_TO_FETCH,
+                "size": size,
                 "identifier": "vote",
                 "address": voter.to_bech32(),
                 "after": reasonably_recent_timestamp
             })
+
+        if len(events) == size:
+            print(f"\tRetrieved {size} events. [red]There could be more![/red]")
 
         votes: list[OnChainVote] = []
 

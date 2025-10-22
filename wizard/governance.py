@@ -20,7 +20,8 @@ class GovernanceRecord:
 
 
 class OnChainVote:
-    def __init__(self, proposal: int, contract: str, timestamp: int, vote_type: VoteType) -> None:
+    def __init__(self, voter: str, proposal: int, contract: str, timestamp: int, vote_type: VoteType) -> None:
+        self.voter = voter
         self.proposal = proposal
         self.contract = contract
         self.timestamp = timestamp
