@@ -16,6 +16,7 @@ from wizard.constants import DEFAULT_GAS_PRICE
 from wizard.entrypoint import MyEntrypoint
 from wizard.guardians import AuthApp
 from wizard.transactions import TransactionWrapper
+from wizard.utils import format_time
 
 
 def get_vote_type_from_args(choice: str) -> VoteType:
@@ -72,15 +73,22 @@ def _do_main(cli_args: List[str]):
     )
 
     for account_wrapper in accounts_wrappers:
-        print(f"[yellow]{account_wrapper.wallet_name}[/yellow]", account_wrapper.account.address.to_bech32())
+        address = account_wrapper.account.address
+
+        print(f"[yellow]{account_wrapper.wallet_name}[/yellow]", address.to_bech32())
 
         try:
-            voting_power = entrypoint.get_voting_power_on_onchain_governance(account_wrapper.account.address)
+            voting_power = entrypoint.get_voting_power_on_onchain_governance(address)
             if not voting_power:
                 print(f"\t[red]has no voting power[/red]")
                 continue
 
             print(f"\t[blue]has voting power[/blue]", voting_power)
+
+            previous_votes = entrypoint.get_onchain_votes(address, proposal, configuration.system_governance_contract)
+
+            for previous_vote in previous_votes:
+                print(f"\tprevious vote at {format_time(previous_vote.timestamp)}:", previous_vote.vote_type)
 
             tx = entrypoint.vote_on_onchain_governance(
                 sender=account_wrapper,

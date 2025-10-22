@@ -1,4 +1,5 @@
 import time
+from datetime import datetime, timedelta, timezone
 from multiprocessing.dummy import Pool
 from typing import Any, Callable, Optional
 
@@ -21,6 +22,7 @@ from wizard.constants import (
     CONTRACT_RESULTS_CODE_OK_ENCODED, COSIGNER_SERVICE_ID,
     COSIGNER_SIGN_TRANSACTIONS_RETRY_DELAY_IN_SECONDS,
     DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS, MAX_NUM_CUSTOM_TOKENS_TO_FETCH,
+    MAX_NUM_EVENTS_TO_FETCH,
     MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_CLAIM_REWARDS,
     MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_REWARDS, METACHAIN_ID,
     NETWORK_PROVIDER_NUM_RETRIES, NETWORK_PROVIDER_TIMEOUT_SECONDS,
@@ -31,6 +33,7 @@ from wizard.constants import (
     TRANSACTION_AWAITING_POLLING_TIMEOUT_IN_MILLISECONDS)
 from wizard.currencies import is_native_currency
 from wizard.errors import KnownError, TransientError
+from wizard.governance import OnChainVote
 from wizard.guardians import (AuthApp, AuthRegistrationEntry, CosignerClient,
                               GuardianData)
 from wizard.rewards import ClaimableRewards, ReceivedRewards, RewardsType
@@ -333,6 +336,40 @@ class MyEntrypoint:
         )
 
         return transaction
+
+    def get_onchain_votes(self, voter: Address, proposal: int, contract: str) -> list[OnChainVote]:
+        reasonably_recent_timestamp = int((datetime.now(timezone.utc) - timedelta(days=30)).timestamp())
+
+        events: list[dict[str, Any]] = self.api_network_provider.do_get_generic(
+            f"events", {
+                "from": 0,
+                "size": MAX_NUM_EVENTS_TO_FETCH,
+                "identifier": "vote",
+                "address": voter.to_bech32(),
+                "after": reasonably_recent_timestamp
+            })
+
+        votes: list[OnChainVote] = []
+
+        for event in events:
+            topics = event.get("topics", [])
+
+            event_proposal_hex = topics[0]
+            event_proposal = int(event_proposal_hex, 16)
+            event_vote_type_hex = topics[1]
+            event_vote_type = VoteType(bytes.fromhex(event_vote_type_hex).decode())
+            event_log_address = event.get("logAddress", "")
+            event_timestamp = event.get("timestamp", 0)
+
+            if event_proposal != proposal:
+                continue
+            if event_log_address != contract:
+                continue
+
+            vote = OnChainVote(proposal, contract, event_timestamp, event_vote_type)
+            votes.append(vote)
+
+        return votes
 
     def get_guardian_data(self, address: Address):
         response = self.proxy_network_provider.do_get_generic(f"address/{address.to_bech32()}/guardian-data")

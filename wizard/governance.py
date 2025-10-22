@@ -1,7 +1,7 @@
 
 from typing import Any
 
-from multiversx_sdk import Address
+from multiversx_sdk import Address, VoteType
 
 
 class GovernanceRecord:
@@ -17,3 +17,11 @@ class GovernanceRecord:
         proof = bytes.fromhex(data["proof"])
 
         return cls(address, power, proof)
+
+
+class OnChainVote:
+    def __init__(self, proposal: int, contract: str, timestamp: int, vote_type: VoteType) -> None:
+        self.proposal = proposal
+        self.contract = contract
+        self.timestamp = timestamp
+        self.vote_type = vote_type
