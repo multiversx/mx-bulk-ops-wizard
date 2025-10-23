@@ -34,6 +34,7 @@ class Configuration:
     governance_contract: str
     system_governance_contract: str
     cosigner_url: str
+    liquid_staking_contracts: list[str]
 
 
 CONFIGURATIONS = {
@@ -47,6 +48,7 @@ CONFIGURATIONS = {
         governance_contract="erd1qqqqqqqqqqqqqpgqfn2mu8l0dte34eqh6qtgmpjpxpkhunccrl4sy2sp07",
         system_governance_contract="erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrlllsrujgla",
         cosigner_url="https://tools.multiversx.com",
+        liquid_staking_contracts=["erd1qqqqqqqqqqqqqpgq2khda0rx207gvlqg92dq5rh0z03a8dqf78ssu0qlcc", "erd1qqqqqqqqqqqqqpgqdnpmeseu3j5t7grds9dfj8ttt70pev66ah0sydkq9x"]
     ),
     "devnet": Configuration(
         chain_id="D",
@@ -57,7 +59,8 @@ CONFIGURATIONS = {
         legacy_delegation_contract="erd1qqqqqqqqqqqqqpgq97wezxw6l7lgg7k9rxvycrz66vn92ksh2tssxwf7ep",
         governance_contract="erd1qqqqqqqqqqqqqpgqahutnw3r4s95gxz4keecvlyyl3wlsu2mdthq06swcp",
         system_governance_contract="erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrlllsrujgla",
-        cosigner_url="https://devnet-tools.multiversx.com"
+        cosigner_url="https://devnet-tools.multiversx.com",
+        liquid_staking_contracts=[],
     ),
     "testnet": Configuration(
         chain_id="T",
@@ -68,6 +71,7 @@ CONFIGURATIONS = {
         legacy_delegation_contract="erd1qqqqqqqqqqqqqpgq97wezxw6l7lgg7k9rxvycrz66vn92ksh2tssxwf7ep",
         governance_contract="erd1qqqqqqqqqqqqqpgqahutnw3r4s95gxz4keecvlyyl3wlsu2mdthq06swcp",
         system_governance_contract="erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrlllsrujgla",
-        cosigner_url="https://testnet-tcs-api.multiversx.com"
+        cosigner_url="https://testnet-tcs-api.multiversx.com",
+        liquid_staking_contracts=[],
     ),
 }
