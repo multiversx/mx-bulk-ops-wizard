@@ -327,7 +327,7 @@ class MyEntrypoint:
             nonce=sender.account.get_nonce_then_increment(),
             contract=Address.new_from_bech32(contract),
             gas_limit=100_000_000,
-            function="vote",
+            function="delegate_vote",
             arguments=[
                 U64Value(proposal),
                 StringValue(vote.value),

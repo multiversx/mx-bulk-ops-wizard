@@ -57,7 +57,7 @@ CONFIGURATIONS = {
         legacy_delegation_contract="erd1qqqqqqqqqqqqqpgq97wezxw6l7lgg7k9rxvycrz66vn92ksh2tssxwf7ep",
         system_governance_contract="erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrlllsrujgla",
         cosigner_url="https://devnet-tools.multiversx.com",
-        liquid_staking_contracts=[],
+        liquid_staking_contracts=["erd1qqqqqqqqqqqqqpgqlavy2909f0pa9yf66es5cwh53m0wue28u7hs79g2m2"],
     ),
     "testnet": Configuration(
         chain_id="T",
