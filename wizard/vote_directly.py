@@ -78,19 +78,19 @@ def _do_main(cli_args: List[str]):
         print(f"[yellow]{account_wrapper.wallet_name}[/yellow]", address.to_bech32())
 
         try:
-            voting_power = entrypoint.get_voting_power_on_onchain_governance(address)
+            voting_power = entrypoint.get_direct_voting_power(address)
             if not voting_power:
                 print(f"\t[red]has no voting power[/red]")
                 continue
 
             print(f"\t[blue]has voting power[/blue]", voting_power)
 
-            previous_votes = entrypoint.get_onchain_direct_votes(address, proposal)
+            previous_votes = entrypoint.get_direct_votes(address, proposal)
 
             for previous_vote in previous_votes:
                 print(f"\tprevious vote at {format_time(previous_vote.timestamp)}:", previous_vote.vote_type)
 
-            tx = entrypoint.vote_on_onchain_governance(
+            tx = entrypoint.vote_directly(
                 sender=account_wrapper,
                 proposal=proposal,
                 vote=vote,

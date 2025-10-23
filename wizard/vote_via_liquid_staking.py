@@ -1,10 +1,11 @@
+import json
 import sys
 import traceback
 from argparse import ArgumentParser
 from pathlib import Path
 from typing import List
 
-from multiversx_sdk import VoteType
+from multiversx_sdk import Address, VoteType
 from rich import print
 
 from wizard import errors, ux
@@ -12,9 +13,10 @@ from wizard.accounts import load_accounts
 from wizard.configuration import CONFIGURATIONS
 from wizard.constants import DEFAULT_GAS_PRICE
 from wizard.entrypoint import MyEntrypoint
+from wizard.governance import GovernanceRecord
 from wizard.guardians import AuthApp
 from wizard.transactions import TransactionWrapper
-from wizard.utils import format_time
+from wizard.utils import format_native_amount, format_time
 
 
 def get_vote_type_from_args(choice: str) -> VoteType:
@@ -41,6 +43,7 @@ def _do_main(cli_args: List[str]):
     parser.add_argument("--wallets", required=True, help="path to wallets configuration file")
     parser.add_argument("--auth", required=True, help="auth registration file")
     parser.add_argument("--gas-price", type=int, default=DEFAULT_GAS_PRICE, help="min gas price")
+    parser.add_argument("--contract", required=True, help="contract address")
     parser.add_argument("--proposal", type=int, required=True, help="proposal nonce / id")
     parser.add_argument("--vote", choices=["yes", "no", "abstain", "veto"], required=True, help="vote choice")
 
@@ -57,32 +60,44 @@ def _do_main(cli_args: List[str]):
     accounts_wrappers = load_accounts(Path(args.wallets))
     auth_app = AuthApp.new_from_registration_file(Path(args.auth)) if args.auth else AuthApp([])
 
+    contract = args.contract
+    proposal = args.proposal
+    vote = get_vote_type_from_args(args.vote)
+    gas_price = args.gas_price
+
+    ux.show_message("Loading proofs...")
+    proofs_path = Path("governance_proofs") / network / contract / f"{proposal}.json"
+
+    json_content = proofs_path.read_text()
+    data = json.loads(json_content)
+    records = [GovernanceRecord.new_from_dictionary(item) for item in data]
+
+    records_by_adresses: dict[str, GovernanceRecord] = {
+        item.address.to_bech32(): item for item in records
+    }
+
     entrypoint.recall_nonces(accounts_wrappers)
     entrypoint.recall_guardians(accounts_wrappers)
 
     transactions_wrappers: List[TransactionWrapper] = []
 
-    proposal = args.proposal
-    vote = get_vote_type_from_args(args.vote)
-    gas_price = args.gas_price
-
     ux.confirm_continuation(
         f"Submit bulk votes on proposal [green]{proposal}[/green] with choice [green]{vote.value.upper()}[/green]?"
     )
 
-    previous_votes_by_voter = entrypoint.get_delegated_votes(proposal, configuration.legacy_delegation_contract)
+    previous_votes_by_voter = entrypoint.get_delegated_votes(proposal, contract)
 
     for account_wrapper in accounts_wrappers:
         address = account_wrapper.account.address
 
         print(f"[yellow]{account_wrapper.wallet_name}[/yellow]", address.to_bech32())
 
-        voting_power = entrypoint.get_voting_power_via_legacy_delegation(address)
-        if not voting_power:
+        if address.to_bech32() not in records_by_adresses:
             print(f"\t[red]has no voting power[/red]")
             continue
 
-        print(f"\t[blue]has voting power[/blue]", voting_power)
+        record = records_by_adresses[address.to_bech32()]
+        print(f"\t[blue]has voting power[/blue]", format_native_amount(record.power))
 
         previous_votes = previous_votes_by_voter.get(address.to_bech32(), [])
 
@@ -93,10 +108,13 @@ def _do_main(cli_args: List[str]):
             print(f"\t[red]has already voted![/red]")
             continue
 
-        tx = entrypoint.vote_via_legacy_delegation(
+        tx = entrypoint.vote_via_liquid_staking(
             sender=account_wrapper,
+            contract=contract,
             proposal=proposal,
             vote=vote,
+            power=record.power,
+            proof=record.proof,
             gas_price=gas_price,
         )
 

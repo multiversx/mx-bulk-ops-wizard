@@ -123,12 +123,16 @@ class MyEntrypoint:
         return int(amount)
 
     def recall_nonces(self, accounts_wrappers: list[AccountWrapper]):
+        print("Recalling nonces...")
+
         def recall_nonce(wrapper: AccountWrapper):
             wrapper.account.nonce = self.network_entrypoint.recall_account_nonce(wrapper.account.address)
 
         Pool(NUM_PARALLEL_GET_NONCE_REQUESTS).map(recall_nonce, accounts_wrappers)
 
     def recall_guardians(self, accounts: list[AccountWrapper]):
+        print("Recalling guardians...")
+
         def recall_guardian(wrapper: AccountWrapper):
             guardian_data = self.get_guardian_data(wrapper.account.address)
             wrapper.guardian = Address.new_from_bech32(guardian_data.active_guardian) if guardian_data.is_guarded else None
@@ -267,33 +271,11 @@ class MyEntrypoint:
             guardian=sender.guardian
         )
 
-    def vote_on_governance(self, sender: AccountWrapper, proposal: int, choice: int, power: int, proof: bytes, gas_price: int) -> Transaction:
-        governance_contract = Address.new_from_bech32(self.configuration.governance_contract)
-
-        controller = self.network_entrypoint.create_smart_contract_controller()
-        transaction = controller.create_transaction_for_execute(
-            sender=sender.account,
-            nonce=sender.account.get_nonce_then_increment(),
-            contract=governance_contract,
-            gas_limit=50_000_000,
-            function="vote",
-            arguments=[
-                U64Value(proposal),
-                U64Value(choice),
-                BigUIntValue(power),
-                BytesValue(proof)
-            ],
-            gas_price=gas_price,
-            guardian=sender.guardian
-        )
-
-        return transaction
-
-    def get_voting_power_on_onchain_governance(self, voter: Address):
+    def get_direct_voting_power(self, voter: Address):
         controller = self.network_entrypoint.create_governance_controller()
         return controller.get_voting_power(voter)
 
-    def vote_on_onchain_governance(self, sender: AccountWrapper, proposal: int, vote: VoteType, gas_price: int) -> Transaction:
+    def vote_directly(self, sender: AccountWrapper, proposal: int, vote: VoteType, gas_price: int) -> Transaction:
         controller = self.network_entrypoint.create_governance_controller()
 
         return controller.create_transaction_for_voting(
@@ -337,7 +319,28 @@ class MyEntrypoint:
 
         return transaction
 
-    def get_onchain_direct_votes(self, voter: Address, proposal: int) -> list[OnChainVote]:
+    def vote_via_liquid_staking(self, sender: AccountWrapper, contract: str, proposal: int, vote: VoteType, power: int, proof: bytes, gas_price: int) -> Transaction:
+        controller = self.network_entrypoint.create_smart_contract_controller()
+
+        transaction = controller.create_transaction_for_execute(
+            sender=sender.account,
+            nonce=sender.account.get_nonce_then_increment(),
+            contract=Address.new_from_bech32(contract),
+            gas_limit=100_000_000,
+            function="vote",
+            arguments=[
+                U64Value(proposal),
+                StringValue(vote.value),
+                BigUIntValue(power),
+                BytesValue(proof)
+            ],
+            gas_price=gas_price,
+            guardian=sender.guardian
+        )
+
+        return transaction
+
+    def get_direct_votes(self, voter: Address, proposal: int) -> list[OnChainVote]:
         size = MAX_NUM_EVENTS_TO_FETCH
         reasonably_recent_timestamp = int((datetime.now(timezone.utc) - timedelta(days=10)).timestamp())
         contract = self.configuration.system_governance_contract
@@ -376,7 +379,7 @@ class MyEntrypoint:
 
         return votes
 
-    def get_onchain_delegated_votes(self, proposal: int, contract: str) -> dict[str, list[OnChainVote]]:
+    def get_delegated_votes(self, proposal: int, contract: str) -> dict[str, list[OnChainVote]]:
         size = MAX_NUM_EVENTS_TO_FETCH
         reasonably_recent_timestamp = int((datetime.now(timezone.utc) - timedelta(days=10)).timestamp())
 

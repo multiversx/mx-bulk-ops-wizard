@@ -132,7 +132,9 @@ PYTHONPATH=. python3 ./wizard/vote_via_legacy_delegation.py --network=devnet --w
 ## Governance: delegated vote (via liquid staking contracts)
 
 ```
-...
+export CONTRACT=...
+
+PYTHONPATH=. python3 ./wizard/vote_via_liquid_staking.py --network=devnet --wallets=$WALLETS_CONFIG --proposal <proposal nonce> --vote yes --auth=$AUTH_REGISTRATION --contract=$CONTRACT
 ```
 
 ## Simple report on governance (voting)

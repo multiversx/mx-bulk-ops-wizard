@@ -36,7 +36,7 @@ def _do_main(cli_args: list[str]):
     accounts_wrappers = load_accounts(Path(args.wallets))
     proposal = args.proposal
 
-    previous_votes_by_voter = entrypoint.get_onchain_delegated_votes(proposal, configuration.legacy_delegation_contract)
+    previous_votes_by_voter = entrypoint.get_delegated_votes(proposal, configuration.legacy_delegation_contract)
 
     for account_wrapper in accounts_wrappers:
         address = account_wrapper.account.address
@@ -44,13 +44,13 @@ def _do_main(cli_args: list[str]):
         print(f"[yellow]{account_wrapper.wallet_name}[/yellow]", address.to_bech32())
 
         try:
-            direct_voting_power = entrypoint.get_voting_power_on_onchain_governance(address)
+            direct_voting_power = entrypoint.get_direct_voting_power(address)
         except SmartContractQueryError:
             direct_voting_power = 0
 
         voting_power_via_legacy_delegation = entrypoint.get_voting_power_via_legacy_delegation(address)
 
-        previous_direct_votes = entrypoint.get_onchain_direct_votes(address, proposal)
+        previous_direct_votes = entrypoint.get_direct_votes(address, proposal)
         previous_votes_via_legacy_delegation = previous_votes_by_voter.get(address.to_bech32(), [])
 
         print("\t", "direct voting power", direct_voting_power)
