@@ -31,7 +31,6 @@ class Configuration:
     deep_history_url: str
     explorer_url: str
     legacy_delegation_contract: str
-    governance_contract: str
     system_governance_contract: str
     cosigner_url: str
     liquid_staking_contracts: list[str]
@@ -45,7 +44,6 @@ CONFIGURATIONS = {
         deep_history_url=ENV_MAINNET_DEEP_HISTORY_URL or DEFAULT_MAINNET_DEEP_HISTORY_URL,
         explorer_url="https://explorer.multiversx.com",
         legacy_delegation_contract="erd1qqqqqqqqqqqqqpgqxwakt2g7u9atsnr03gqcgmhcv38pt7mkd94q6shuwt",
-        governance_contract="erd1qqqqqqqqqqqqqpgqfn2mu8l0dte34eqh6qtgmpjpxpkhunccrl4sy2sp07",
         system_governance_contract="erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrlllsrujgla",
         cosigner_url="https://tools.multiversx.com",
         liquid_staking_contracts=["erd1qqqqqqqqqqqqqpgq2khda0rx207gvlqg92dq5rh0z03a8dqf78ssu0qlcc", "erd1qqqqqqqqqqqqqpgqdnpmeseu3j5t7grds9dfj8ttt70pev66ah0sydkq9x"]
@@ -57,7 +55,6 @@ CONFIGURATIONS = {
         deep_history_url=ENV_DEVNET_DEEP_HISTORY_URL or DEFAULT_DEVNET_DEEP_HISTORY_URL,
         explorer_url="https://devnet-explorer.multiversx.com",
         legacy_delegation_contract="erd1qqqqqqqqqqqqqpgq97wezxw6l7lgg7k9rxvycrz66vn92ksh2tssxwf7ep",
-        governance_contract="erd1qqqqqqqqqqqqqpgqahutnw3r4s95gxz4keecvlyyl3wlsu2mdthq06swcp",
         system_governance_contract="erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrlllsrujgla",
         cosigner_url="https://devnet-tools.multiversx.com",
         liquid_staking_contracts=[],
@@ -69,7 +66,6 @@ CONFIGURATIONS = {
         deep_history_url=ENV_TESTNET_DEEP_HISTORY_URL or DEFAULT_TESTNET_DEEP_HISTORY_URL,
         explorer_url="https://testnet-explorer.multiversx.com",
         legacy_delegation_contract="erd1qqqqqqqqqqqqqpgq97wezxw6l7lgg7k9rxvycrz66vn92ksh2tssxwf7ep",
-        governance_contract="erd1qqqqqqqqqqqqqpgqahutnw3r4s95gxz4keecvlyyl3wlsu2mdthq06swcp",
         system_governance_contract="erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrlllsrujgla",
         cosigner_url="https://testnet-tcs-api.multiversx.com",
         liquid_staking_contracts=[],

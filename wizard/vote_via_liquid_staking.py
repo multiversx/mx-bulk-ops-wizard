@@ -65,16 +65,8 @@ def _do_main(cli_args: List[str]):
     vote = get_vote_type_from_args(args.vote)
     gas_price = args.gas_price
 
-    ux.show_message("Loading proofs...")
     proofs_path = Path("governance_proofs") / network / contract / f"{proposal}.json"
-
-    json_content = proofs_path.read_text()
-    data = json.loads(json_content)
-    records = [GovernanceRecord.new_from_dictionary(item) for item in data]
-
-    records_by_adresses: dict[str, GovernanceRecord] = {
-        item.address.to_bech32(): item for item in records
-    }
+    governance_records_by_adresses = GovernanceRecord.load_many_from_proofs_file(proofs_path)
 
     entrypoint.recall_nonces(accounts_wrappers)
     entrypoint.recall_guardians(accounts_wrappers)
@@ -92,11 +84,11 @@ def _do_main(cli_args: List[str]):
 
         print(f"[yellow]{account_wrapper.wallet_name}[/yellow]", address.to_bech32())
 
-        if address.to_bech32() not in records_by_adresses:
+        if address.to_bech32() not in governance_records_by_adresses:
             print(f"\t[red]has no voting power[/red]")
             continue
 
-        record = records_by_adresses[address.to_bech32()]
+        record = governance_records_by_adresses[address.to_bech32()]
         print(f"\t[blue]has voting power[/blue]", format_native_amount(record.power))
 
         previous_votes = previous_votes_by_voter.get(address.to_bech32(), [])

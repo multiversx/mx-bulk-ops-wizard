@@ -1,4 +1,6 @@
 
+import json
+from pathlib import Path
 from typing import Any
 
 from multiversx_sdk import Address, VoteType
@@ -17,6 +19,18 @@ class GovernanceRecord:
         proof = bytes.fromhex(data["proof"])
 
         return cls(address, power, proof)
+
+    @classmethod
+    def load_many_from_proofs_file(cls, proofs_file: Path):
+        json_content = proofs_file.read_text()
+        data = json.loads(json_content)
+        records = [GovernanceRecord.new_from_dictionary(item) for item in data]
+
+        records_by_adresses: dict[str, GovernanceRecord] = {
+            item.address.to_bech32(): item for item in records
+        }
+
+        return records_by_adresses
 
 
 class OnChainVote:
