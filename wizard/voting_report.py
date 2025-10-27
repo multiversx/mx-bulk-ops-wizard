@@ -73,15 +73,16 @@ def _do_main(cli_args: list[str]):
             print("\t", "[red]missing delegated vote (legacy delegation)![/red]")
 
         for contract in configuration.liquid_staking_contracts:
-            voting_power = governance_records_for_liquid_staking_contracts[contract].get(address.to_bech32(), 0)
+            record = governance_records_for_liquid_staking_contracts[contract].get(address.to_bech32())
             previous_vote = entrypoint.get_vote_via_liquid_staking(address, contract, proposal)
 
-            print("\t", f"voting power via {contract}", voting_power)
+            if record:
+                print("\t", f"voting power via {contract}", record.power)
 
             if previous_vote:
                 print("\t", f"previous delegated vote ({contract}) on {format_time(previous_vote.timestamp)}:", previous_vote.vote_type)
 
-            if voting_power and not previous_vote:
+            if record and not previous_vote:
                 print("\t", f"[red]missing delegated vote ({contract})![/red]")
 
 

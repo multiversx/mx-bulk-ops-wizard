@@ -370,11 +370,13 @@ class MyEntrypoint:
             print(f"\tRetrieved {size} transactions. [red]There could be more![/red]")
 
         for transaction in transactions:
+            timestamp = transaction.get("timestamp", 0)
+
             all_events: list[Any] = []
-            all_events.extend(transaction.get("logs", []).get("events", []))
+            all_events.extend(transaction.get("logs", {}).get("events", []))
 
             for result in transaction.get("results"):
-                all_events.extend(result.get("logs", []).get("events", []))
+                all_events.extend(result.get("logs", {}).get("events", []))
 
             for event in all_events:
                 if event.get("identifier") != event_identifier:
@@ -388,10 +390,9 @@ class MyEntrypoint:
                 event_proposal.decode_top_level(event_proposal_bytes)
                 event_vote_type_base64 = topics[1]
                 event_vote_type = VoteType(base64.b64decode(event_vote_type_base64).decode())
-                event_timestamp = event.get("timestamp", 0)
 
                 if event_proposal.value == proposal:
-                    return OnChainVote(voter, proposal, contract, event_timestamp, event_vote_type)
+                    return OnChainVote(voter, proposal, contract, timestamp, event_vote_type)
 
         return None
 
