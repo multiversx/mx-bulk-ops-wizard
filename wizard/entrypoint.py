@@ -387,7 +387,7 @@ class MyEntrypoint:
                 event_proposal = U64Value()
                 event_proposal.decode_top_level(event_proposal_bytes)
                 event_vote_type_base64 = topics[1]
-                event_vote_type = VoteType(base64.b64decode(event_vote_type_base64))
+                event_vote_type = VoteType(base64.b64decode(event_vote_type_base64).decode())
                 event_timestamp = event.get("timestamp", 0)
 
                 if event_proposal.value == proposal:
