@@ -1,11 +1,10 @@
-import json
 import sys
 import traceback
 from argparse import ArgumentParser
 from pathlib import Path
 from typing import List
 
-from multiversx_sdk import Address, VoteType
+from multiversx_sdk import VoteType
 from rich import print
 
 from wizard import errors, ux
@@ -77,8 +76,6 @@ def _do_main(cli_args: List[str]):
         f"Submit bulk votes on proposal [green]{proposal}[/green] with choice [green]{vote.value.upper()}[/green]?"
     )
 
-    previous_votes_by_voter = entrypoint.get_delegated_votes(proposal, contract)
-
     for account_wrapper in accounts_wrappers:
         address = account_wrapper.account.address
 
@@ -91,12 +88,9 @@ def _do_main(cli_args: List[str]):
         record = governance_records_by_adresses[address.to_bech32()]
         print(f"\t[blue]has voting power[/blue]", format_native_amount(record.power))
 
-        previous_votes = previous_votes_by_voter.get(address.to_bech32(), [])
-
-        for previous_vote in previous_votes:
+        previous_vote = entrypoint.get_vote_via_liquid_staking(address, contract, proposal)
+        if previous_vote:
             print(f"\tprevious vote at {format_time(previous_vote.timestamp)}:", previous_vote.vote_type)
-
-        if previous_votes:
             print(f"\t[red]has already voted![/red]")
             continue
 

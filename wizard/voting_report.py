@@ -10,8 +10,8 @@ from wizard import errors, ux
 from wizard.accounts import load_accounts
 from wizard.configuration import CONFIGURATIONS
 from wizard.entrypoint import MyEntrypoint
-from wizard.governance import GovernanceRecord, OnChainVote
-from wizard.utils import format_native_amount, format_time
+from wizard.governance import GovernanceRecord
+from wizard.utils import format_time
 
 
 def main(cli_args: list[str] = sys.argv[1:]):
@@ -37,14 +37,10 @@ def _do_main(cli_args: list[str]):
     accounts_wrappers = load_accounts(Path(args.wallets))
     proposal = args.proposal
 
-    previous_votes_by_voter_via_legacy_delegation = entrypoint.get_delegated_votes(proposal, configuration.legacy_delegation_contract)
-    previous_votes_by_voter_via_liquid_staking_contracts: dict[str, dict[str, list[OnChainVote]]] = {}
     governance_records_for_liquid_staking_contracts: dict[str, dict[str, GovernanceRecord]] = {}
 
+    # Load previous votes, load governance records
     for contract in configuration.liquid_staking_contracts:
-        previous_votes_by_voter_via_liquid_staking_contracts[contract] = entrypoint.get_delegated_votes(proposal, contract)
-
-        # Load snapshots for liquid staking, as well:
         proofs_path = Path("governance_proofs") / network / contract / f"{proposal}.json"
         governance_records_for_liquid_staking_contracts[contract] = GovernanceRecord.load_many_from_proofs_file(proofs_path)
 
@@ -60,32 +56,32 @@ def _do_main(cli_args: list[str]):
 
         voting_power_via_legacy_delegation = entrypoint.get_voting_power_via_legacy_delegation(address)
 
-        previous_direct_votes = entrypoint.get_direct_votes(address, proposal)
-        previous_votes_via_legacy_delegation = previous_votes_by_voter_via_legacy_delegation.get(address.to_bech32(), [])
+        previous_direct_vote = entrypoint.get_direct_vote(address, proposal)
+        previous_vote_via_legacy_delegation = entrypoint.get_vote_via_legacy_delegation(address, proposal)
 
         print("\t", "direct voting power", direct_voting_power)
         print("\t", "voting power via legacy delegation", voting_power_via_legacy_delegation)
 
-        for vote in previous_direct_votes:
-            print("\t", f"previous direct vote on {format_time(vote.timestamp)}:", vote.vote_type)
-        for vote in previous_votes_via_legacy_delegation:
-            print("\t", f"previous delegated vote (legacy delegation) on {format_time(vote.timestamp)}:", vote.vote_type)
+        if previous_direct_vote:
+            print("\t", f"previous direct vote on {format_time(previous_direct_vote.timestamp)}:", previous_direct_vote.vote_type)
+        if previous_vote_via_legacy_delegation:
+            print("\t", f"previous delegated vote (legacy delegation) on {format_time(previous_vote_via_legacy_delegation.timestamp)}:", previous_vote_via_legacy_delegation.vote_type)
 
-        if direct_voting_power and not previous_direct_votes:
+        if direct_voting_power and not previous_direct_vote:
             print("\t", "[red]missing direct vote![/red]")
-        if voting_power_via_legacy_delegation and not previous_votes_via_legacy_delegation:
+        if voting_power_via_legacy_delegation and not previous_vote_via_legacy_delegation:
             print("\t", "[red]missing delegated vote (legacy delegation)![/red]")
 
         for contract in configuration.liquid_staking_contracts:
             voting_power = governance_records_for_liquid_staking_contracts[contract].get(address.to_bech32(), 0)
-            previous_votes = previous_votes_by_voter_via_liquid_staking_contracts[contract].get(address.to_bech32(), [])
+            previous_vote = entrypoint.get_vote_via_liquid_staking(address, contract, proposal)
 
             print("\t", f"voting power via {contract}", voting_power)
 
-            for vote in previous_votes:
-                print("\t", f"previous delegated vote ({contract}) on {format_time(vote.timestamp)}:", vote.vote_type)
+            if previous_vote:
+                print("\t", f"previous delegated vote ({contract}) on {format_time(previous_vote.timestamp)}:", previous_vote.vote_type)
 
-            if voting_power and not previous_votes:
+            if voting_power and not previous_vote:
                 print("\t", f"[red]missing delegated vote ({contract})![/red]")
 
 

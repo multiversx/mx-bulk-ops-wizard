@@ -85,9 +85,8 @@ def _do_main(cli_args: List[str]):
 
             print(f"\t[blue]has voting power[/blue]", voting_power)
 
-            previous_votes = entrypoint.get_direct_votes(address, proposal)
-
-            for previous_vote in previous_votes:
+            previous_vote = entrypoint.get_direct_vote(address, proposal)
+            if previous_vote:
                 print(f"\tprevious vote at {format_time(previous_vote.timestamp)}:", previous_vote.vote_type)
 
             tx = entrypoint.vote_directly(

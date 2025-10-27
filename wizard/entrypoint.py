@@ -1,3 +1,4 @@
+import base64
 import time
 from datetime import datetime, timedelta, timezone
 from multiprocessing.dummy import Pool
@@ -22,9 +23,9 @@ from wizard.constants import (
     CONTRACT_RESULTS_CODE_OK_ENCODED, COSIGNER_SERVICE_ID,
     COSIGNER_SIGN_TRANSACTIONS_RETRY_DELAY_IN_SECONDS,
     DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS, MAX_NUM_CUSTOM_TOKENS_TO_FETCH,
-    MAX_NUM_EVENTS_TO_FETCH,
     MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_CLAIM_REWARDS,
-    MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_REWARDS, METACHAIN_ID,
+    MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_REWARDS,
+    MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_VOTE, METACHAIN_ID,
     NETWORK_PROVIDER_NUM_RETRIES, NETWORK_PROVIDER_TIMEOUT_SECONDS,
     NETWORK_PROVIDERS_RETRY_DELAY_IN_SECONDS,
     NUM_PARALLEL_GET_GUARDIAN_DATA_REQUESTS, NUM_PARALLEL_GET_NONCE_REQUESTS,
@@ -326,6 +327,7 @@ class MyEntrypoint:
             sender=sender.account,
             nonce=sender.account.get_nonce_then_increment(),
             contract=Address.new_from_bech32(contract),
+            # Gas estimator might not work, thus we hard-code a value here.
             gas_limit=100_000_000,
             function="delegate_vote",
             arguments=[
@@ -340,84 +342,58 @@ class MyEntrypoint:
 
         return transaction
 
-    def get_direct_votes(self, voter: Address, proposal: int) -> list[OnChainVote]:
-        size = MAX_NUM_EVENTS_TO_FETCH
-        reasonably_recent_timestamp = int((datetime.now(timezone.utc) - timedelta(days=10)).timestamp())
-        contract = self.configuration.system_governance_contract
+    def get_direct_vote(self, voter: Address, proposal: int) -> Optional[OnChainVote]:
+        return self._get_past_vote(voter.to_bech32(), self.configuration.system_governance_contract, "vote", "vote", proposal)
 
-        events: list[dict[str, Any]] = self.api_network_provider.do_get_generic(
-            f"events", {
-                "from": 0,
-                "size": size,
-                "identifier": "vote",
-                "address": voter.to_bech32(),
-                "after": reasonably_recent_timestamp
-            })
+    def get_vote_via_legacy_delegation(self, voter: Address, proposal: int) -> Optional[OnChainVote]:
+        return self._get_past_vote(voter.to_bech32(), self.configuration.legacy_delegation_contract, "delegateVote", "delegateVote", proposal)
 
-        if len(events) == size:
-            print(f"\tRetrieved {size} events. [red]There could be more![/red]")
+    def get_vote_via_liquid_staking(self, voter: Address, contract: str, proposal: int) -> Optional[OnChainVote]:
+        return self._get_past_vote(voter.to_bech32(), contract, "delegate_vote", "delegateVote", proposal)
 
-        votes: list[OnChainVote] = []
+    def _get_past_vote(self, voter: str, contract: str, function: str, event_identifier: str, proposal: int) -> Optional[OnChainVote]:
+        url = f"accounts/{voter}/transactions"
+        size = MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_VOTE
+        reasonably_recent_timestamp = int((datetime.now(timezone.utc) - timedelta(days=30)).timestamp())
 
-        for event in events:
-            topics = event.get("topics", [])
+        transactions = self._api_do_get(url, {
+            "status": "success",
+            "receiver": contract,
+            "function": function,
+            "withLogs": "true",
+            "withScResults": "true",
+            "size": size,
+            "after": reasonably_recent_timestamp
+        })
 
-            event_proposal_hex = topics[0]
-            event_proposal = int(event_proposal_hex, 16)
-            event_vote_type_hex = topics[1]
-            event_vote_type = VoteType(bytes.fromhex(event_vote_type_hex).decode())
-            event_log_address = event.get("logAddress", "")
-            event_timestamp = event.get("timestamp", 0)
+        if len(transactions) == size:
+            print(f"\tRetrieved {size} transactions. [red]There could be more![/red]")
 
-            if event_proposal != proposal:
-                continue
-            if event_log_address != contract:
-                continue
+        for transaction in transactions:
+            all_events: list[Any] = []
+            all_events.extend(transaction.get("logs", []).get("events", []))
 
-            vote = OnChainVote(voter.to_bech32(), proposal, contract, event_timestamp, event_vote_type)
-            votes.append(vote)
+            for result in transaction.get("results"):
+                all_events.extend(result.get("logs", []).get("events", []))
 
-        return votes
+            for event in all_events:
+                if event.get("identifier") != event_identifier:
+                    continue
 
-    def get_delegated_votes(self, proposal: int, contract: str) -> dict[str, list[OnChainVote]]:
-        size = MAX_NUM_EVENTS_TO_FETCH
-        reasonably_recent_timestamp = int((datetime.now(timezone.utc) - timedelta(days=10)).timestamp())
+                topics = event.get("topics", [])
 
-        events: list[dict[str, Any]] = self.api_network_provider.do_get_generic(
-            f"events", {
-                "from": 0,
-                "size": size,
-                "identifier": "delegateVote",
-                "address": contract,
-                "after": reasonably_recent_timestamp
-            })
+                event_proposal_base64 = topics[0]
+                event_proposal_bytes = base64.b64decode(event_proposal_base64)
+                event_proposal = U64Value()
+                event_proposal.decode_top_level(event_proposal_bytes)
+                event_vote_type_base64 = topics[1]
+                event_vote_type = VoteType(base64.b64decode(event_vote_type_base64))
+                event_timestamp = event.get("timestamp", 0)
 
-        if len(events) == size:
-            print(f"\tRetrieved {size} events. [red]There could be more![/red]")
+                if event_proposal.value == proposal:
+                    return OnChainVote(voter, proposal, contract, event_timestamp, event_vote_type)
 
-        votes: list[OnChainVote] = []
-        votes_by_voter: dict[str, list[OnChainVote]] = {}
-
-        for event in events:
-            topics = event.get("topics", [])
-
-            event_proposal_hex = topics[0]
-            event_proposal = int(event_proposal_hex, 16)
-            event_vote_type_hex = topics[1]
-            event_vote_type = VoteType(bytes.fromhex(event_vote_type_hex).decode())
-            event_voter = Address.new_from_hex(topics[2])
-            event_timestamp = event.get("timestamp", 0)
-
-            if event_proposal != proposal:
-                continue
-
-            vote = OnChainVote(event_voter.to_bech32(), proposal, contract, event_timestamp, event_vote_type)
-            votes.append(vote)
-
-        for vote in votes:
-            votes_by_voter.setdefault(vote.voter, []).append(vote)
-
-        return votes_by_voter
+        return None
 
     def get_guardian_data(self, address: Address):
         response = self.proxy_network_provider.do_get_generic(f"address/{address.to_bech32()}/guardian-data")

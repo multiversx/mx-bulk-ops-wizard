@@ -70,8 +70,6 @@ def _do_main(cli_args: List[str]):
         f"Submit bulk votes on proposal [green]{proposal}[/green] with choice [green]{vote.value.upper()}[/green]?"
     )
 
-    previous_votes_by_voter = entrypoint.get_delegated_votes(proposal, configuration.legacy_delegation_contract)
-
     for account_wrapper in accounts_wrappers:
         address = account_wrapper.account.address
 
@@ -84,12 +82,9 @@ def _do_main(cli_args: List[str]):
 
         print(f"\t[blue]has voting power[/blue]", voting_power)
 
-        previous_votes = previous_votes_by_voter.get(address.to_bech32(), [])
-
-        for previous_vote in previous_votes:
+        previous_vote = entrypoint.get_vote_via_legacy_delegation(address, proposal)
+        if previous_vote:
             print(f"\tprevious vote at {format_time(previous_vote.timestamp)}:", previous_vote.vote_type)
-
-        if previous_votes:
             print(f"\t[red]has already voted![/red]")
             continue
 
