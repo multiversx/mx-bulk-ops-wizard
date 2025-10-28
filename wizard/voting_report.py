@@ -39,7 +39,7 @@ def _do_main(cli_args: list[str]):
 
     governance_records_for_liquid_staking_contracts: dict[str, dict[str, GovernanceRecord]] = {}
 
-    # Load previous votes, load governance records
+    # Load governance records
     for contract in configuration.liquid_staking_contracts:
         proofs_path = Path("governance_proofs") / network / contract / f"{proposal}.json"
         governance_records_for_liquid_staking_contracts[contract] = GovernanceRecord.load_many_from_proofs_file(proofs_path)

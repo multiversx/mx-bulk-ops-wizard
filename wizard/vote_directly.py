@@ -14,18 +14,10 @@ from wizard.accounts import load_accounts
 from wizard.configuration import CONFIGURATIONS
 from wizard.constants import DEFAULT_GAS_PRICE
 from wizard.entrypoint import MyEntrypoint
+from wizard.governance import convert_string_to_vote_type
 from wizard.guardians import AuthApp
 from wizard.transactions import TransactionWrapper
 from wizard.utils import format_time
-
-
-def get_vote_type_from_args(choice: str) -> VoteType:
-    return {
-        "yes": VoteType.YES,
-        "no": VoteType.NO,
-        "abstain": VoteType.ABSTAIN,
-        "veto": VoteType.VETO
-    }[choice]
 
 
 def main(cli_args: list[str] = sys.argv[1:]):
@@ -65,7 +57,7 @@ def _do_main(cli_args: List[str]):
     transactions_wrappers: List[TransactionWrapper] = []
 
     proposal = args.proposal
-    vote = get_vote_type_from_args(args.vote)
+    vote = convert_string_to_vote_type(args.vote)
     gas_price = args.gas_price
 
     ux.confirm_continuation(

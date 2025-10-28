@@ -12,19 +12,10 @@ from wizard.accounts import load_accounts
 from wizard.configuration import CONFIGURATIONS
 from wizard.constants import DEFAULT_GAS_PRICE
 from wizard.entrypoint import MyEntrypoint
-from wizard.governance import GovernanceRecord
+from wizard.governance import GovernanceRecord, convert_string_to_vote_type
 from wizard.guardians import AuthApp
 from wizard.transactions import TransactionWrapper
 from wizard.utils import format_native_amount, format_time
-
-
-def get_vote_type_from_args(choice: str) -> VoteType:
-    return {
-        "yes": VoteType.YES,
-        "no": VoteType.NO,
-        "abstain": VoteType.ABSTAIN,
-        "veto": VoteType.VETO
-    }[choice]
 
 
 def main(cli_args: list[str] = sys.argv[1:]):
@@ -61,7 +52,7 @@ def _do_main(cli_args: List[str]):
 
     contract = args.contract
     proposal = args.proposal
-    vote = get_vote_type_from_args(args.vote)
+    vote = convert_string_to_vote_type(args.vote)
     gas_price = args.gas_price
 
     proofs_path = Path("governance_proofs") / network / contract / f"{proposal}.json"

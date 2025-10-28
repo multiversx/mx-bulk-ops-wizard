@@ -40,3 +40,14 @@ class OnChainVote:
         self.contract = contract
         self.timestamp = timestamp
         self.vote_type = vote_type
+
+
+def convert_string_to_vote_type(input: str) -> VoteType:
+    input = input.lower()
+
+    return {
+        "yes": VoteType.YES,
+        "no": VoteType.NO,
+        "abstain": VoteType.ABSTAIN,
+        "veto": VoteType.VETO
+    }[input]
