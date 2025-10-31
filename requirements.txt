@@ -1,5 +1,5 @@
 requests>=2.32.0,<3.0.0
 ledgercomm[hid]
 rich==13.3.4
-multiversx-sdk[ledger]==2.1.0
+multiversx-sdk[ledger]==2.3.2
 pyotp==2.9.0

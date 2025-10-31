@@ -117,17 +117,30 @@ PYTHONPATH=. python3 ./wizard/prepare_custom_tokens.py --token=WEGLD-a28c59 --ne
 PYTHONPATH=. python3 ./wizard/do_transfers.py --network=devnet --wallets=$WALLETS_CONFIG --infile=custom_transfers.json --receiver=${RECEIVER} --auth=$AUTH_REGISTRATION
 ```
 
-## Vote on governance - outdated
+## Governance: direct vote
 
 ```
-export PROOFS="./proofs.json"
-PYTHONPATH=. python3 ./wizard/vote_on_governance.py --network=devnet --wallets=$WALLETS_CONFIG --proofs=${PROOFS} --auth=$AUTH_REGISTRATION
+PYTHONPATH=. python3 ./wizard/vote_directly.py --network=devnet --wallets=$WALLETS_CONFIG --proposal <proposal nonce> --vote yes --auth=$AUTH_REGISTRATION
 ```
 
-## Vote on on-chain governance
+## Governance: delegated vote (via legacy delegation)
 
 ```
-PYTHONPATH=. python3 ./wizard/vote_on_onchain_governance.py --network=devnet --wallets=$WALLETS_CONFIG --proposal <proposal nonce> --vote <yes/no/abstain/veto> --auth=$AUTH_REGISTRATION
+PYTHONPATH=. python3 ./wizard/vote_via_legacy_delegation.py --network=devnet --wallets=$WALLETS_CONFIG --proposal <proposal nonce> --vote yes --auth=$AUTH_REGISTRATION 
+```
+
+## Governance: delegated vote (via liquid staking contracts)
+
+```
+export CONTRACT=...
+
+PYTHONPATH=. python3 ./wizard/vote_via_liquid_staking.py --network=devnet --wallets=$WALLETS_CONFIG --proposal <proposal nonce> --vote yes --auth=$AUTH_REGISTRATION --contract=$CONTRACT
+```
+
+## Simple report on governance (voting)
+
+```
+PYTHONPATH=. python3 ./wizard/voting_report.py --network=devnet --wallets=$WALLETS_CONFIG --proposal <proposal nonce> 
 ```
 
 ## Guardians

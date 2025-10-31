@@ -4,23 +4,20 @@ from argparse import ArgumentParser
 from pathlib import Path
 from typing import List
 
+from multiversx_sdk import VoteType
+from multiversx_sdk.gas_estimator.errors import GasLimitEstimationError
+from multiversx_sdk.smart_contracts.errors import SmartContractQueryError
+from rich import print
+
 from wizard import errors, ux
 from wizard.accounts import load_accounts
 from wizard.configuration import CONFIGURATIONS
 from wizard.constants import DEFAULT_GAS_PRICE
 from wizard.entrypoint import MyEntrypoint
+from wizard.governance import convert_string_to_vote_type
 from wizard.guardians import AuthApp
 from wizard.transactions import TransactionWrapper
-
-from multiversx_sdk import VoteType
-
-def get_vote_type_from_args(choice: str) -> VoteType:
-    return {
-        "yes": VoteType.YES,
-        "no": VoteType.NO,
-        "abstain": VoteType.ABSTAIN,
-        "veto": VoteType.VETO
-    }[choice]
+from wizard.utils import format_time
 
 
 def main(cli_args: list[str] = sys.argv[1:]):
@@ -30,6 +27,7 @@ def main(cli_args: list[str] = sys.argv[1:]):
         ux.show_critical_error(traceback.format_exc())
         ux.show_critical_error(err.get_pretty())
         return 1
+
 
 def _do_main(cli_args: List[str]):
     parser = ArgumentParser()
@@ -59,21 +57,44 @@ def _do_main(cli_args: List[str]):
     transactions_wrappers: List[TransactionWrapper] = []
 
     proposal = args.proposal
-    vote = get_vote_type_from_args(args.vote)
+    vote = convert_string_to_vote_type(args.vote)
     gas_price = args.gas_price
 
     ux.confirm_continuation(
         f"Submit bulk votes on proposal [green]{proposal}[/green] with choice [green]{vote.value.upper()}[/green]?"
     )
 
-    for account in accounts_wrappers:
-        tx = entrypoint.vote_on_onchain_governance(
-            sender=account,
-            proposal=proposal,
-            vote=vote,
-            gas_price=gas_price,
-        )
-        transactions_wrappers.append(TransactionWrapper(tx, account.wallet_name))
+    for account_wrapper in accounts_wrappers:
+        address = account_wrapper.account.address
+
+        print(f"[yellow]{account_wrapper.wallet_name}[/yellow]", address.to_bech32())
+
+        try:
+            voting_power = entrypoint.get_direct_voting_power(address)
+            if not voting_power:
+                print(f"\t[red]has no voting power[/red]")
+                continue
+
+            print(f"\t[blue]has voting power[/blue]", voting_power)
+
+            previous_vote = entrypoint.get_direct_vote(address, proposal)
+            if previous_vote:
+                print(f"\tprevious vote at {format_time(previous_vote.timestamp)}:", previous_vote.vote_type)
+                print(f"\t[red]has already voted![/red]")
+                continue
+
+            tx = entrypoint.vote_directly(
+                sender=account_wrapper,
+                proposal=proposal,
+                vote=vote,
+                gas_price=gas_price,
+            )
+
+            transactions_wrappers.append(TransactionWrapper(tx, account_wrapper.wallet_name))
+        except SmartContractQueryError as error:
+            print(f"\t[red]{error}[/red]")
+        except GasLimitEstimationError as error:
+            print(f"\t[red]{error.error}[/red]")
 
     ux.confirm_continuation(f"Ready to send [green]{len(transactions_wrappers)}[/green] transaction(s)?")
     entrypoint.send_multiple(auth_app, transactions_wrappers)

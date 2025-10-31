@@ -1,4 +1,6 @@
+import base64
 import time
+from datetime import datetime, timedelta, timezone
 from multiprocessing.dummy import Pool
 from typing import Any, Callable, Optional
 
@@ -8,7 +10,8 @@ from multiversx_sdk import (AccountOnNetwork, Address, ApiNetworkProvider,
                             NetworkProviderConfig, NetworkProviderError,
                             ProxyNetworkProvider, Token, TokenTransfer,
                             Transaction, TransactionOnNetwork, VoteType)
-from multiversx_sdk.abi import BigUIntValue, BytesValue, U64Value
+from multiversx_sdk.abi import (AddressValue, BigUIntValue, BytesValue,
+                                StringValue, U64Value)
 from rich import print
 
 from wizard import ux
@@ -21,7 +24,8 @@ from wizard.constants import (
     COSIGNER_SIGN_TRANSACTIONS_RETRY_DELAY_IN_SECONDS,
     DEFAULT_CHUNK_SIZE_OF_SEND_TRANSACTIONS, MAX_NUM_CUSTOM_TOKENS_TO_FETCH,
     MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_CLAIM_REWARDS,
-    MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_REWARDS, METACHAIN_ID,
+    MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_REWARDS,
+    MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_VOTE, METACHAIN_ID,
     NETWORK_PROVIDER_NUM_RETRIES, NETWORK_PROVIDER_TIMEOUT_SECONDS,
     NETWORK_PROVIDERS_RETRY_DELAY_IN_SECONDS,
     NUM_PARALLEL_GET_GUARDIAN_DATA_REQUESTS, NUM_PARALLEL_GET_NONCE_REQUESTS,
@@ -30,6 +34,7 @@ from wizard.constants import (
     TRANSACTION_AWAITING_POLLING_TIMEOUT_IN_MILLISECONDS)
 from wizard.currencies import is_native_currency
 from wizard.errors import KnownError, TransientError
+from wizard.governance import OnChainVote
 from wizard.guardians import (AuthApp, AuthRegistrationEntry, CosignerClient,
                               GuardianData)
 from wizard.rewards import ClaimableRewards, ReceivedRewards, RewardsType
@@ -44,7 +49,7 @@ class MyEntrypoint:
         configuration: Configuration,
         use_gas_estimator: Optional[bool] = None,
         gas_limit_multiplier: Optional[float] = None
-        ) -> None:
+    ) -> None:
         self.configuration = configuration
 
         self.network_entrypoint = NetworkEntrypoint(
@@ -119,12 +124,16 @@ class MyEntrypoint:
         return int(amount)
 
     def recall_nonces(self, accounts_wrappers: list[AccountWrapper]):
+        print("Recalling nonces...")
+
         def recall_nonce(wrapper: AccountWrapper):
             wrapper.account.nonce = self.network_entrypoint.recall_account_nonce(wrapper.account.address)
 
         Pool(NUM_PARALLEL_GET_NONCE_REQUESTS).map(recall_nonce, accounts_wrappers)
 
     def recall_guardians(self, accounts: list[AccountWrapper]):
+        print("Recalling guardians...")
+
         def recall_guardian(wrapper: AccountWrapper):
             guardian_data = self.get_guardian_data(wrapper.account.address)
             wrapper.guardian = Address.new_from_bech32(guardian_data.active_guardian) if guardian_data.is_guarded else None
@@ -263,19 +272,67 @@ class MyEntrypoint:
             guardian=sender.guardian
         )
 
-    def vote_on_governance(self, sender: AccountWrapper, proposal: int, choice: int, power: int, proof: bytes, gas_price: int) -> Transaction:
-        governance_contract = Address.new_from_bech32(self.configuration.governance_contract)
+    def get_direct_voting_power(self, voter: Address):
+        controller = self.network_entrypoint.create_governance_controller()
+        return controller.get_voting_power(voter)
+
+    def vote_directly(self, sender: AccountWrapper, proposal: int, vote: VoteType, gas_price: int) -> Transaction:
+        controller = self.network_entrypoint.create_governance_controller()
+
+        return controller.create_transaction_for_voting(
+            sender=sender.account,
+            nonce=sender.account.get_nonce_then_increment(),
+            proposal_nonce=proposal,
+            vote=vote,
+            gas_price=gas_price,
+            guardian=sender.guardian,
+        )
+
+    def get_voting_power_via_legacy_delegation(self, voter: Address) -> int:
+        legacy_delegation_contract = Address.new_from_bech32(self.configuration.legacy_delegation_contract)
+
+        controller = self.network_entrypoint.create_smart_contract_controller()
+        [power_encoded] = controller.query(
+            contract=legacy_delegation_contract,
+            function="getVotingPower",
+            arguments=[AddressValue.new_from_address(voter)],
+        )
+
+        power = BigUIntValue()
+        power.decode_top_level(power_encoded)
+        return power.value
+
+    def vote_via_legacy_delegation(self, sender: AccountWrapper, proposal: int, vote: VoteType, gas_price: int):
+        legacy_delegation_contract = Address.new_from_bech32(self.configuration.legacy_delegation_contract)
 
         controller = self.network_entrypoint.create_smart_contract_controller()
         transaction = controller.create_transaction_for_execute(
             sender=sender.account,
             nonce=sender.account.get_nonce_then_increment(),
-            contract=governance_contract,
-            gas_limit=50_000_000,
-            function="vote",
+            contract=legacy_delegation_contract,
+            function="delegateVote",
+            arguments=[U64Value(proposal), StringValue(vote.value)],
+            # Gas estimator might not work, thus we hard-code a value here.
+            gas_limit=75_000_000,
+            gas_price=gas_price,
+            guardian=sender.guardian
+        )
+
+        return transaction
+
+    def vote_via_liquid_staking(self, sender: AccountWrapper, contract: str, proposal: int, vote: VoteType, power: int, proof: bytes, gas_price: int) -> Transaction:
+        controller = self.network_entrypoint.create_smart_contract_controller()
+
+        transaction = controller.create_transaction_for_execute(
+            sender=sender.account,
+            nonce=sender.account.get_nonce_then_increment(),
+            contract=Address.new_from_bech32(contract),
+            # Gas estimator might not work, thus we hard-code a value here.
+            gas_limit=100_000_000,
+            function="delegate_vote",
             arguments=[
                 U64Value(proposal),
-                U64Value(choice),
+                StringValue(vote.value),
                 BigUIntValue(power),
                 BytesValue(proof)
             ],
@@ -285,16 +342,59 @@ class MyEntrypoint:
 
         return transaction
 
-    def vote_on_onchain_governance(self, sender: AccountWrapper, proposal: int, vote: VoteType, gas_price: int) -> Transaction:
-        controller = self.network_entrypoint.create_governance_controller()
-        return controller.create_transaction_for_voting(
-            sender=sender.account,
-            nonce=sender.account.get_nonce_then_increment(),
-            proposal_nonce=proposal,
-            vote=vote,
-            gas_price=gas_price,
-            guardian=sender.guardian,
-        )
+    def get_direct_vote(self, voter: Address, proposal: int) -> Optional[OnChainVote]:
+        return self._get_past_vote(voter.to_bech32(), self.configuration.system_governance_contract, "vote", "vote", proposal)
+
+    def get_vote_via_legacy_delegation(self, voter: Address, proposal: int) -> Optional[OnChainVote]:
+        return self._get_past_vote(voter.to_bech32(), self.configuration.legacy_delegation_contract, "delegateVote", "delegateVote", proposal)
+
+    def get_vote_via_liquid_staking(self, voter: Address, contract: str, proposal: int) -> Optional[OnChainVote]:
+        return self._get_past_vote(voter.to_bech32(), contract, "delegate_vote", "delegateVote", proposal)
+
+    def _get_past_vote(self, voter: str, contract: str, function: str, event_identifier: str, proposal: int) -> Optional[OnChainVote]:
+        url = f"accounts/{voter}/transactions"
+        size = MAX_NUM_TRANSACTIONS_TO_FETCH_OF_TYPE_VOTE
+        reasonably_recent_timestamp = int((datetime.now(timezone.utc) - timedelta(days=30)).timestamp())
+
+        transactions = self._api_do_get(url, {
+            "status": "success",
+            "receiver": contract,
+            "function": function,
+            "withLogs": "true",
+            "withScResults": "true",
+            "size": size,
+            "after": reasonably_recent_timestamp
+        })
+
+        if len(transactions) == size:
+            print(f"\tRetrieved {size} transactions. [red]There could be more![/red]")
+
+        for transaction in transactions:
+            timestamp = transaction.get("timestamp", 0)
+
+            all_events: list[Any] = []
+            all_events.extend(transaction.get("logs", {}).get("events", []))
+
+            for result in transaction.get("results"):
+                all_events.extend(result.get("logs", {}).get("events", []))
+
+            for event in all_events:
+                if event.get("identifier") != event_identifier:
+                    continue
+
+                topics = event.get("topics", [])
+
+                event_proposal_base64 = topics[0]
+                event_proposal_bytes = base64.b64decode(event_proposal_base64)
+                event_proposal = U64Value()
+                event_proposal.decode_top_level(event_proposal_bytes)
+                event_vote_type_base64 = topics[1]
+                event_vote_type = VoteType(base64.b64decode(event_vote_type_base64).decode())
+
+                if event_proposal.value == proposal:
+                    return OnChainVote(voter, proposal, contract, timestamp, event_vote_type)
+
+        return None
 
     def get_guardian_data(self, address: Address):
         response = self.proxy_network_provider.do_get_generic(f"address/{address.to_bech32()}/guardian-data")
