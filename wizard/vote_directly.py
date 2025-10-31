@@ -80,6 +80,8 @@ def _do_main(cli_args: List[str]):
             previous_vote = entrypoint.get_direct_vote(address, proposal)
             if previous_vote:
                 print(f"\tprevious vote at {format_time(previous_vote.timestamp)}:", previous_vote.vote_type)
+                print(f"\t[red]has already voted![/red]")
+                continue
 
             tx = entrypoint.vote_directly(
                 sender=account_wrapper,
